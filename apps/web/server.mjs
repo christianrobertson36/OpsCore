@@ -9,6 +9,6 @@ const dist = path.join(__dirname, 'dist');
 
 app.get('/health', (_req, res) => res.json({ ok: true, app: 'OpsCore Web', version: 'v1' }));
 app.use(express.static(dist));
-app.get('*', (_req, res) => res.sendFile(path.join(dist, 'index.html')));
+app.use((_req, res) => res.sendFile(path.join(dist, 'index.html')));
 
 app.listen(port, '0.0.0.0', () => console.log(`OpsCore Web v1 listening on ${port}`));
