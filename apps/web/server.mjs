@@ -7,8 +7,8 @@ const port = Number(process.env.PORT || 3000);
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const dist = path.join(__dirname, 'dist');
 
-app.get('/health', (_req, res) => res.json({ ok: true, app: 'OpsCore Web', version: 'v3' }));
+app.get('/health', (_req, res) => res.json({ ok: true, app: 'OpsCore Web', version: 'v4' }));
 app.use(express.static(dist));
 app.use((_req, res) => res.sendFile(path.join(dist, 'index.html')));
 
-app.listen(port, '0.0.0.0', () => console.log(`OpsCore Web v3 listening on ${port}`));
+app.listen(port, '0.0.0.0', () => console.log(`OpsCore Web v4 listening on ${port}`));
