@@ -2,8 +2,8 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import './styles.css';
 
-const ROOT = `${window.location.protocol}//${window.location.hostname}:5058`;
-const API = `${ROOT}/api`;
+const ROOT = '';
+const API = '/api';
 const navGroups = [
   ['Service', ['Incidents','Requests','Problems','Changes','Knowledge']],
   ['Infrastructure', ['Sites','Server Rooms','Racks','Equipment']],
