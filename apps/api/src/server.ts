@@ -387,7 +387,7 @@ app.patch('/api/incidents/:number', requireRoles('Administrator','Service Desk',
 app.get('/api/requests', async (_req,res,next)=>{ try { const r=await pool.query('SELECT number AS id,title,status,requested_for AS "requestedFor",created_at AS "createdAt" FROM service_requests ORDER BY id DESC'); res.json(r.rows);} catch(error){next(error);} });
 
 app.get('/api/assets', async (_req,res,next)=>{ try {
-  const r=await pool.query(`SELECT a.asset_number AS id,a.name,a.type,COALESCE(s.name,a.site) AS site,a.site_id AS "siteId",l.id AS "locationId",l.name AS location,a.owner,a.state,a.serial_number AS "serialNumber",a.model
+  const r=await pool.query(`SELECT a.id AS "dbId",a.asset_number AS id,a.name,a.type,COALESCE(s.name,a.site) AS site,a.site_id AS "siteId",l.id AS "locationId",l.name AS location,a.owner,a.state,a.serial_number AS "serialNumber",a.model
     FROM assets a LEFT JOIN sites s ON s.id=a.site_id LEFT JOIN locations l ON l.id=a.location_id ORDER BY a.id DESC`); res.json(r.rows);
 } catch(error){next(error);} });
 app.post('/api/assets', requireRoles('Administrator','Engineer','Infrastructure'), async (req,res,next)=>{ try {
@@ -396,7 +396,7 @@ app.post('/api/assets', requireRoles('Administrator','Engineer','Infrastructure'
   if(siteId){const site=(await pool.query('SELECT id,name FROM sites WHERE id=$1',[siteId])).rows[0];if(!site)return res.status(400).json({error:'invalid site'});siteName=site.name;}
   if(locationId){const location=(await pool.query('SELECT id,site_id FROM locations WHERE id=$1',[locationId])).rows[0];if(!location|| (siteId && location.site_id!==siteId))return res.status(400).json({error:'invalid location for selected site'});}
   const seq=Number((await pool.query('SELECT COALESCE(MAX(id),0)+1 AS next FROM assets')).rows[0].next); const assetNumber=`AST-${String(seq).padStart(6,'0')}`;
-  const r=await pool.query(`INSERT INTO assets (asset_number,name,type,site,site_id,location_id,owner,state,serial_number,model) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10) RETURNING asset_number AS id,name,type,site,site_id AS "siteId",location_id AS "locationId",owner,state,serial_number AS "serialNumber",model`,[assetNumber,String(name).trim(),type,siteName,siteId,locationId,owner,state,serialNumber,model]); res.status(201).json(r.rows[0]);
+  const r=await pool.query(`INSERT INTO assets (asset_number,name,type,site,site_id,location_id,owner,state,serial_number,model) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10) RETURNING id AS "dbId",asset_number AS id,name,type,site,site_id AS "siteId",location_id AS "locationId",owner,state,serial_number AS "serialNumber",model`,[assetNumber,String(name).trim(),type,siteName,siteId,locationId,owner,state,serialNumber,model]); res.status(201).json(r.rows[0]);
 } catch(error){next(error);} });
 
 app.get('/api/users', requireRoles('Administrator'), async (_req,res,next)=>{ try { const r=await pool.query('SELECT id,email,name,role,active,created_at AS "createdAt",last_login_at AS "lastLoginAt" FROM users ORDER BY name'); res.json(r.rows);} catch(error){next(error);} });
