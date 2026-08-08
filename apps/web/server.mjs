@@ -40,10 +40,10 @@ function proxyToApi(req, res) {
   req.pipe(proxyReq);
 }
 
-app.get('/health', (_req, res) => res.json({ ok: true, app: 'OpsCore Web', version: 'v7', apiProxy: apiUrl.origin, equipment: 'enabled' }));
+app.get('/health', (_req, res) => res.json({ ok: true, app: 'OpsCore Web', version: 'v8', apiProxy: apiUrl.origin, equipment: 'half-u-depth-aware' }));
 app.use('/api', proxyToApi);
 app.use('/auth', proxyToApi);
 app.use(express.static(dist));
 app.use((_req, res) => res.sendFile(path.join(dist, 'index.html')));
 
-app.listen(port, '0.0.0.0', () => console.log(`OpsCore Web v7 listening on ${port}; API proxy ${apiUrl.origin}`));
+app.listen(port, '0.0.0.0', () => console.log(`OpsCore Web v8 listening on ${port}; API proxy ${apiUrl.origin}`));
