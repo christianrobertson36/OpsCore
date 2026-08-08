@@ -2,70 +2,30 @@ import React,{useEffect,useMemo,useState} from 'react';
 import './equipment-v7.css';
 
 function pct(value,max){return max>0?Math.min(100,Math.round((value/max)*100)):0}
+const isZeroU=side=>String(side).includes('Zero-U');
+const fmt=n=>Number.isInteger(Number(n))?String(Number(n)):Number(n).toFixed(1);
 
 export default function RackEquipmentPanel({rack,request,canWrite}){
-  const [data,setData]=useState(null);
-  const [side,setSide]=useState('Front');
-  const [modal,setModal]=useState(false);
-  const [message,setMessage]=useState('');
-  const [formError,setFormError]=useState('');
-  const [busy,setBusy]=useState(false);
-
-  async function load(){if(!rack?.id)return;try{setData(await request(`/api/racks/${rack.id}/equipment`))}catch(error){setMessage(error.message)}}
-  useEffect(()=>{load()},[rack?.id]);
-
-  const items=data?.items||[];
-  const visible=useMemo(()=>items.filter(i=>i.mountSide===side),[items,side]);
-  const occupancy=side==='Front'?(data?.frontOccupiedU||0):(data?.rearOccupiedU||0);
-  const equipmentAt=u=>visible.find(item=>u>=Number(item.startU)&&u<Number(item.startU)+Number(item.heightU));
-
-  function openModal(){setFormError('');setMessage('');setModal(true)}
-  function closeModal(){if(!busy){setFormError('');setModal(false)}}
-
-  async function addEquipment(e){
-    e.preventDefault();
-    setBusy(true);
-    setFormError('');
-    const f=new FormData(e.currentTarget);
-    try{
-      const payload={
-        equipmentCode:f.get('equipmentCode'),
-        name:f.get('name'),
-        equipmentType:f.get('equipmentType'),
-        manufacturer:f.get('manufacturer'),
-        model:f.get('model'),
-        serialNumber:f.get('serialNumber'),
-        assetTag:f.get('assetTag'),
-        startU:f.get('startU')||null,
-        heightU:f.get('heightU'),
-        mountSide:f.get('mountSide'),
-        depthMm:f.get('depthMm'),
-        weightKg:f.get('weightKg'),
-        powerDrawW:f.get('powerDrawW'),
-        status:f.get('status'),
-        owner:f.get('owner'),
-        notes:f.get('notes')
-      };
-      await request(`/api/racks/${rack.id}/equipment`,{method:'POST',body:JSON.stringify(payload)});
-      setModal(false);
-      await load();
-      setMessage('Equipment placed successfully');
-    }catch(error){
-      setFormError(error.message||'Unable to place equipment');
-    }finally{
-      setBusy(false);
-    }
-  }
-
-  async function removeEquipment(item){if(!canWrite)return;try{await request(`/api/rack-equipment/${item.id}`,{method:'DELETE'});await load();setMessage(`${item.equipmentCode} removed`)}catch(error){setMessage(error.message)}}
-
-  return <>
-    <div className="equipmentSummary"><div className="equipmentMetric"><span>Devices</span><strong>{data?.totalDevices||0}</strong></div><div className="equipmentMetric"><span>Front U</span><strong>{data?.frontOccupiedU||0}/{rack.rackUnits}</strong></div><div className="equipmentMetric"><span>Rear U</span><strong>{data?.rearOccupiedU||0}/{rack.rackUnits}</strong></div><div className="equipmentMetric"><span>Weight</span><strong>{data?.weightKg||0} kg</strong></div><div className="equipmentMetric"><span>Power</span><strong>{data?.powerDrawW||0} W</strong></div></div>
-    <div className="equipmentToolbar"><div className="mountToggle"><button type="button" className={side==='Front'?'selected':''} onClick={()=>setSide('Front')}>Front</button><button type="button" className={side==='Rear'?'selected':''} onClick={()=>setSide('Rear')}>Rear</button></div>{canWrite&&<button type="button" className="primary" onClick={openModal}>+ Place equipment</button>}</div>
-    {message&&<div className="equipmentNotice">{message}</div>}
-    <div className="equipmentLayout"><div className="panel rackElevationPanel"><div className="rackElevationTitle"><strong>{side} elevation</strong><span className="mono">{occupancy}/{rack.rackUnits}U used</span></div><div className="rackFrame equipmentRack">{Array.from({length:rack.rackUnits},(_,i)=>rack.rackUnits-i).map(u=>{const item=equipmentAt(u);const isBottom=item&&Number(item.startU)===u;return <div className={`rackU ${item?'occupied':''}`} key={u}><span>{u}</span><div className="rackSlot">{isBottom&&<div className="deviceBlock" style={{height:`calc(${item.heightU} * 17px - 2px)`}}><div><strong>{item.name}</strong><small>{item.equipmentCode} · {item.heightU}U · {item.mountSide}</small></div></div>}</div><span>{u}</span></div>})}</div></div><div className="panel equipmentListPanel"><div className="panelHead"><div><h2>Installed equipment</h2><p>{side} mounted devices in this rack.</p></div></div>{visible.length?<div className="equipmentList">{visible.map(item=><div className="equipmentItem" key={item.id}><div className="equipmentTypeIcon">{String(item.equipmentType||'D').slice(0,1)}</div><div className="equipmentIdentity"><strong>{item.name}</strong><span>{item.equipmentCode} · U{item.startU}–U{Number(item.startU)+Number(item.heightU)-1}</span><small>{[item.manufacturer,item.model].filter(Boolean).join(' ')||item.equipmentType}</small></div><div className="equipmentFacts"><span>{item.depthMm||0} mm</span><span>{item.powerDrawW||0} W</span><span>{item.weightKg||0} kg</span></div>{canWrite&&<button type="button" className="equipmentRemove" onClick={()=>removeEquipment(item)}>Remove</button>}</div>)}</div>:<div className="infraEmpty">No {side.toLowerCase()}-mounted equipment in this rack.</div>}<div className="capacityBars"><Capacity label="U-space" value={occupancy} max={rack.rackUnits} suffix="U"/><Capacity label="Rack weight" value={data?.weightKg||0} max={data?.weightCapacityKg||0} suffix="kg"/><Capacity label="Rack power" value={data?.powerDrawW||0} max={data?.powerCapacityW||0} suffix="W"/></div></div></div>
-    {modal&&<div className="modalBack" onMouseDown={closeModal}><form className="modal modalWide equipmentForm" autoComplete="off" onSubmit={addEquipment} onMouseDown={e=>e.stopPropagation()}><div className="panelHead"><div><h2>Place rack equipment</h2><p>Leave Bottom U blank to use the next available U automatically.</p></div><button type="button" className="close" onClick={closeModal}>×</button></div>{formError&&<div className="equipmentFormError"><strong>Unable to place equipment</strong><span>{formError}</span></div>}<div className="formGrid"><label>Equipment code<input name="equipmentCode" required autoFocus autoComplete="off" placeholder="SRV-01"/></label><label>Name<input name="name" required autoComplete="off" placeholder="Hypervisor 01"/></label></div><div className="formGrid"><label>Type<select name="equipmentType"><option>Server</option><option>Network Switch</option><option>Firewall</option><option>Storage</option><option>UPS</option><option>PDU</option><option>Patch Panel</option><option>Appliance</option><option>Other</option></select></label><label>Status<select name="status"><option>Installed</option><option>Planned</option><option>Maintenance</option><option>Retired</option></select></label></div><div className="formGrid"><label>Mount side<select name="mountSide" defaultValue={side}><option>Front</option><option>Rear</option></select></label><label>Height (U)<input name="heightU" type="number" min="1" max={rack.rackUnits} defaultValue="1" required/></label></div><div className="formGrid"><label>Bottom U<input name="startU" type="number" min="1" max={rack.rackUnits} placeholder="Automatic"/></label><label>Depth (mm)<input name="depthMm" type="number" min="0" max={rack.depthMm} defaultValue="600"/></label></div><div className="formGrid"><label>Manufacturer<input name="manufacturer" autoComplete="off" data-lpignore="true" data-1p-ignore="true"/></label><label>Model<input name="model" autoComplete="off" data-lpignore="true" data-1p-ignore="true"/></label></div><div className="formGrid"><label>Serial number<input name="serialNumber" autoComplete="off" data-lpignore="true" data-1p-ignore="true"/></label><label>Asset tag<input name="assetTag" autoComplete="off" data-lpignore="true" data-1p-ignore="true"/></label></div><div className="formGrid"><label>Weight (kg)<input name="weightKg" type="number" min="0" step="0.1" defaultValue="0"/></label><label>Power draw (W)<input name="powerDrawW" type="number" min="0" step="1" defaultValue="0"/></label></div><label>Owner<input name="owner" autoComplete="off" defaultValue="Infrastructure"/></label><label>Notes<input name="notes" autoComplete="off"/></label><div className="modalActions"><button type="button" className="secondary" onClick={closeModal} disabled={busy}>Cancel</button><button type="submit" className="primary" disabled={busy}>{busy?'Placing…':'Place equipment'}</button></div></form></div>}
-  </>
+ const [data,setData]=useState(null),[side,setSide]=useState('Front'),[modal,setModal]=useState(false),[message,setMessage]=useState(''),[formError,setFormError]=useState(''),[busy,setBusy]=useState(false);
+ async function load(){if(!rack?.id)return;try{setData(await request(`/api/racks/${rack.id}/equipment`))}catch(e){setMessage(e.message)}}
+ useEffect(()=>{load()},[rack?.id]);
+ const items=data?.items||[],visible=useMemo(()=>items.filter(i=>i.mountSide===side),[items,side]);
+ const occupancy=side==='Front'?(data?.frontOccupiedU||0):side==='Rear'?(data?.rearOccupiedU||0):visible.length;
+ const atHalf=u=>visible.find(i=>!isZeroU(i.mountSide)&&u>=Number(i.startU)&&u<Number(i.startU)+Number(i.heightU));
+ function openModal(){setFormError('');setMessage('');setModal(true)}function closeModal(){if(!busy){setFormError('');setModal(false)}}
+ async function addEquipment(e){e.preventDefault();setBusy(true);setFormError('');const f=new FormData(e.currentTarget);try{const payload={equipmentCode:f.get('equipmentCode'),name:f.get('name'),equipmentType:f.get('equipmentType'),manufacturer:f.get('manufacturer'),model:f.get('model'),serialNumber:f.get('serialNumber'),assetTag:f.get('assetTag'),startU:f.get('startU')||null,heightU:f.get('heightU'),mountSide:f.get('mountSide'),depthMm:f.get('depthMm'),weightKg:f.get('weightKg'),powerDrawW:f.get('powerDrawW'),status:f.get('status'),owner:f.get('owner'),notes:f.get('notes')};await request(`/api/racks/${rack.id}/equipment`,{method:'POST',body:JSON.stringify(payload)});setModal(false);await load();setMessage('Equipment placed successfully')}catch(e){setFormError(e.message||'Unable to place equipment')}finally{setBusy(false)}}
+ async function removeEquipment(item){if(!canWrite)return;try{await request(`/api/rack-equipment/${item.id}`,{method:'DELETE'});await load();setMessage(`${item.equipmentCode} removed`)}catch(e){setMessage(e.message)}}
+ const halfSlots=Array.from({length:Number(rack.rackUnits)*2},(_,i)=>Number(rack.rackUnits)+.5-(i*.5)).filter(u=>u>=1);
+ return <>
+  <div className="equipmentSummary"><Metric t="Devices" v={data?.totalDevices||0}/><Metric t="Front U" v={`${fmt(data?.frontOccupiedU||0)}/${rack.rackUnits}`}/><Metric t="Rear U" v={`${fmt(data?.rearOccupiedU||0)}/${rack.rackUnits}`}/><Metric t="Planned / reserved" v={`${data?.plannedDevices||0} / ${data?.reservations||0}`}/><Metric t="Zero-U" v={data?.zeroUDevices||0}/></div>
+  <div className="equipmentToolbar"><div className="mountToggle v8Toggle">{['Front','Rear','Left Zero-U','Right Zero-U'].map(s=><button type="button" key={s} className={side===s?'selected':''} onClick={()=>setSide(s)}>{s}</button>)}</div>{canWrite&&<button type="button" className="primary" onClick={openModal}>+ Place equipment</button>}</div>
+  {message&&<div className="equipmentNotice">{message}</div>}
+  <div className="equipmentLayout">
+   <div className="panel rackElevationPanel"><div className="rackElevationTitle"><strong>{side} {isZeroU(side)?'mounting rail':'elevation'}</strong><span className="mono">{isZeroU(side)?`${visible.length} devices`:`${fmt(occupancy)}/${rack.rackUnits}U used`}</span></div>{isZeroU(side)?<div className="zeroURail"><div className="zeroURailBar">0U</div>{visible.map(i=><div className="zeroUDevice" key={i.id}><strong>{i.name}</strong><span>{i.equipmentCode} · {i.equipmentType}</span></div>)}</div>:<div className="rackFrame equipmentRack halfURack">{halfSlots.map(u=>{const item=atHalf(u),bottom=item&&Number(item.startU)===u;return <div className={`rackU halfSlot ${item?'occupied':''}`} key={u}><span>{Number.isInteger(u)?u:''}</span><div className="rackSlot">{bottom&&<div className={`deviceBlock ${item.status==='Planned'?'planned':item.status==='Reserved'?'reserved':''}`} style={{height:`calc(${Number(item.heightU)*2} * 8.5px - 1px)`}}><div><strong>{item.name}</strong><small>{item.equipmentCode} · {fmt(item.heightU)}U · {item.status}</small></div></div>}</div><span>{Number.isInteger(u)?u:''}</span></div>})}</div>}</div>
+   <div className="panel equipmentListPanel"><div className="panelHead"><div><h2>Rack equipment</h2><p>{side} devices, reservations and planned equipment.</p></div></div>{visible.length?<div className="equipmentList">{visible.map(i=><div className={`equipmentItem state-${String(i.status).toLowerCase()}`} key={i.id}><div className="equipmentTypeIcon">{String(i.equipmentType||'D').slice(0,1)}</div><div className="equipmentIdentity"><strong>{i.name}</strong><span>{i.equipmentCode} · {isZeroU(i.mountSide)?i.mountSide:`Bottom U${fmt(i.startU)} · ${fmt(i.heightU)}U`}</span><small>{[i.manufacturer,i.model].filter(Boolean).join(' ')||i.equipmentType} · {i.status}</small></div><div className="equipmentFacts"><span>{i.depthMm||0} mm</span><span>{i.powerDrawW||0} W</span><span>{i.weightKg||0} kg</span></div>{canWrite&&<button type="button" className="equipmentRemove" onClick={()=>removeEquipment(i)}>Remove</button>}</div>)}</div>:<div className="infraEmpty">No equipment on {side}.</div>}<div className="capacityBars"><Capacity label="Front U-space" value={data?.frontOccupiedU||0} max={rack.rackUnits} suffix="U"/><Capacity label="Rear U-space" value={data?.rearOccupiedU||0} max={rack.rackUnits} suffix="U"/><Capacity label="Rack weight" value={data?.weightKg||0} max={data?.weightCapacityKg||0} suffix="kg"/><Capacity label="Rack power" value={data?.powerDrawW||0} max={data?.powerCapacityW||0} suffix="W"/></div></div>
+  </div>
+  {modal&&<div className="modalBack" onMouseDown={closeModal}><form className="modal modalWide equipmentForm" autoComplete="off" onSubmit={addEquipment} onMouseDown={e=>e.stopPropagation()}><div className="panelHead"><div><h2>Place rack equipment</h2><p>Supports 0.5U placement, depth-aware front/rear mounting, reservations and zero-U devices.</p></div><button type="button" className="close" onClick={closeModal}>×</button></div>{formError&&<div className="equipmentFormError"><strong>Unable to place equipment</strong><span>{formError}</span></div>}<div className="formGrid"><label>Equipment code<input name="equipmentCode" required autoFocus autoComplete="off" placeholder="SRV-01"/></label><label>Name<input name="name" required autoComplete="off" placeholder="Hypervisor 01"/></label></div><div className="formGrid"><label>Type<select name="equipmentType"><option>Server</option><option>Network Switch</option><option>Firewall</option><option>Storage</option><option>UPS</option><option>PDU</option><option>Vertical PDU</option><option>Patch Panel</option><option>Blanking Panel</option><option>Reservation</option><option>Appliance</option><option>Other</option></select></label><label>Placement state<select name="status"><option>Installed</option><option>Planned</option><option>Reserved</option><option>Maintenance</option><option>Retired</option></select></label></div><div className="formGrid"><label>Mount position<select name="mountSide" defaultValue={side}><option>Front</option><option>Rear</option><option>Left Zero-U</option><option>Right Zero-U</option></select></label><label>Height (U)<input name="heightU" type="number" min="0.5" step="0.5" max={rack.rackUnits} defaultValue="1" required/></label></div><div className="formGrid"><label>Bottom U<input name="startU" type="number" min="1" step="0.5" max={Number(rack.rackUnits)+0.5} placeholder="Automatic"/><small>Leave blank for automatic next-free-U. Ignored for Zero-U.</small></label><label>Device depth (mm)<input name="depthMm" type="number" min="0" max={rack.depthMm} defaultValue="600"/><small>Front + rear devices may share U-space when their combined depths fit inside the {rack.depthMm}mm rack.</small></label></div><div className="formGrid"><label>Manufacturer<input name="manufacturer" autoComplete="off" data-lpignore="true"/></label><label>Model<input name="model" autoComplete="off" data-lpignore="true"/></label></div><div className="formGrid"><label>Serial number<input name="serialNumber" autoComplete="off" data-lpignore="true"/></label><label>Asset tag<input name="assetTag" autoComplete="off" data-lpignore="true"/></label></div><div className="formGrid"><label>Weight (kg)<input name="weightKg" type="number" min="0" step="0.1" defaultValue="0"/></label><label>Power draw (W)<input name="powerDrawW" type="number" min="0" step="1" defaultValue="0"/></label></div><label>Owner<input name="owner" autoComplete="off" defaultValue="Infrastructure"/></label><label>Notes<input name="notes" autoComplete="off"/></label><div className="modalActions"><button type="button" className="secondary" onClick={closeModal} disabled={busy}>Cancel</button><button type="submit" className="primary" disabled={busy}>{busy?'Placing…':'Place equipment'}</button></div></form></div>}
+ </>
 }
-
-function Capacity({label,value,max,suffix}){const percentage=pct(Number(value||0),Number(max||0));return <div className="capacityBar"><div><span>{label}</span><b>{max>0?`${value}/${max} ${suffix}`:`${value} ${suffix}`}</b></div><div className="progressTrack"><div className="progressFill" style={{width:`${percentage}%`}}/></div></div>}
+function Metric({t,v}){return <div className="equipmentMetric"><span>{t}</span><strong>{v}</strong></div>}
+function Capacity({label,value,max,suffix}){const p=pct(Number(value||0),Number(max||0));return <div className="capacityBar"><div><span>{label}</span><b>{max>0?`${value}/${max} ${suffix}`:`${value} ${suffix}`}</b></div><div className="progressTrack"><div className="progressFill" style={{width:`${p}%`}}/></div></div>}
