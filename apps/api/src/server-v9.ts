@@ -43,6 +43,7 @@ let registered=false;
  if(!registered){
   registerEquipmentV8(this,pool,requireRoles as any);
   licensing.registerRoutes(this,requireRoles as any);
+  this.use((error:any,_req:any,res:any,_next:any)=>{console.error('OpsCore v9 extension error',error);if(!res.headersSent)res.status(500).json({error:'internal server error'})});
   licensing.ensureSchema().catch(error=>console.error('OpsCore v9 licensing initialisation failed',error));
   registered=true;
  }
