@@ -7,6 +7,7 @@ type RequireRoles=(...roles:Role[])=>express.RequestHandler;
 
 const PRODUCTS=['OPSCORE','DCAM','SERVER_MANAGER'] as const;
 type ProductCode=typeof PRODUCTS[number];
+type LimitCode='users'|'sites'|'assets';
 
 function installationId(){return `OPS-${randomBytes(6).toString('hex').toUpperCase()}`}
 function licenceKey(){const raw=randomBytes(10).toString('hex').toUpperCase();return `OPS-${raw.slice(0,4)}-${raw.slice(4,8)}-${raw.slice(8,12)}-${raw.slice(12,16)}-${raw.slice(16,20)}`}
@@ -71,6 +72,11 @@ export function createLicensingV9(pool:pg.Pool){
   ready=true;
  }
 
+ async function audit(licenceId:number|null,action:string,detail:string,actor='System'){
+  await ensureSchema();
+  await pool.query('INSERT INTO licence_audit(licence_id,action,detail,actor) VALUES($1,$2,$3,$4)',[licenceId,action,detail,actor]);
+ }
+
  async function current(){
   await ensureSchema();
   const row=(await pool.query(`SELECT l.id,l.licence_key AS "licenceKey",l.licence_type AS "licenceType",l.plan_name AS "planName",l.status,l.starts_at AS "startsAt",l.trial_ends_at AS "trialEndsAt",l.expires_at AS "expiresAt",l.grace_ends_at AS "graceEndsAt",l.max_users AS "maxUsers",l.max_sites AS "maxSites",l.max_assets AS "maxAssets",l.notes,o.id AS "organisationId",o.organisation_code AS "organisationCode",o.name AS "organisationName",o.installation_id AS "installationId"
@@ -78,8 +84,8 @@ export function createLicensingV9(pool:pg.Pool){
   if(!row)return null;
   const ent=(await pool.query('SELECT product_code AS "productCode",enabled FROM licence_entitlements WHERE licence_id=$1 ORDER BY product_code',[row.id])).rows;
   const [users,sites,assets]=await Promise.all([pool.query('SELECT COUNT(*)::int AS count FROM users WHERE active=TRUE'),pool.query("SELECT COUNT(*)::int AS count FROM sites WHERE status<>'Retired'"),pool.query('SELECT COUNT(*)::int AS count FROM assets')]);
-  const now=Date.now(); const trialEnd=row.trialEndsAt?new Date(row.trialEndsAt).getTime():null; const expiry=row.expiresAt?new Date(row.expiresAt).getTime():null; const grace=row.graceEndsAt?new Date(row.graceEndsAt).getTime():null;
-  let effectiveStatus=row.status; let mode='Active';
+  const now=Date.now();const trialEnd=row.trialEndsAt?new Date(row.trialEndsAt).getTime():null;const expiry=row.expiresAt?new Date(row.expiresAt).getTime():null;const grace=row.graceEndsAt?new Date(row.graceEndsAt).getTime():null;
+  let effectiveStatus=row.status;let mode='Active';
   if(row.status!=='Active')mode='Blocked';
   else if(row.licenceType==='Trial'&&trialEnd&&now>trialEnd){mode=grace&&now<=grace?'Read Only':'Expired';effectiveStatus=mode==='Read Only'?'Grace':'Expired'}
   else if(expiry&&now>expiry){mode=grace&&now<=grace?'Read Only':'Expired';effectiveStatus=mode==='Read Only'?'Grace':'Expired'}
@@ -91,21 +97,44 @@ export function createLicensingV9(pool:pg.Pool){
  async function writable(product:ProductCode){const licence=await current();return Boolean(licence&&licence.mode==='Active'&&licence.entitlements[product])}
 
  function requireEntitlement(product:ProductCode,write=false):express.RequestHandler{
-  return async(req,res,next)=>{try{const licence=await current();if(!licence)return res.status(402).json({error:'licence required',code:'LICENCE_REQUIRED'});if(!licence.entitlements[product])return res.status(403).json({error:`${product} is not included in this licence`,code:'PRODUCT_NOT_LICENSED',product});if(licence.mode==='Expired'||licence.mode==='Blocked')return res.status(402).json({error:'licence expired or unavailable',code:'LICENCE_EXPIRED'});if(write&&licence.mode==='Read Only')return res.status(403).json({error:'licence is in read-only grace period',code:'LICENCE_READ_ONLY'});next()}catch(error){next(error)}};
+  return async(req:any,res,next)=>{try{
+   const licence=await current();
+   const actor=req.authUser?.email||'Unknown user';
+   if(!licence)return res.status(402).json({error:'licence required',code:'LICENCE_REQUIRED'});
+   if(!licence.entitlements[product]){await audit(licence.id,'PRODUCT_BLOCKED',`${product} access denied for ${req.method} ${req.originalUrl}`,actor);return res.status(403).json({error:`${product} is not included in this licence`,code:'PRODUCT_NOT_LICENSED',product})}
+   if(licence.mode==='Expired'||licence.mode==='Blocked'){await audit(licence.id,'LICENCE_BLOCKED',`${req.method} ${req.originalUrl} denied because licence mode is ${licence.mode}`,actor);return res.status(402).json({error:'licence expired or unavailable',code:'LICENCE_EXPIRED'})}
+   if(write&&licence.mode==='Read Only'){await audit(licence.id,'READ_ONLY_BLOCKED',`${req.method} ${req.originalUrl} denied during read-only grace period`,actor);return res.status(403).json({error:'licence is in read-only grace period',code:'LICENCE_READ_ONLY'})}
+   next();
+  }catch(error){next(error)}};
+ }
+
+ function requireLimit(limit:LimitCode):express.RequestHandler{
+  return async(req:any,res,next)=>{try{
+   const licence=await current();
+   if(!licence)return res.status(402).json({error:'licence required',code:'LICENCE_REQUIRED'});
+   const map={users:{used:Number(licence.usage.users),max:Number(licence.maxUsers),label:'user'},sites:{used:Number(licence.usage.sites),max:Number(licence.maxSites),label:'site'},assets:{used:Number(licence.usage.assets),max:Number(licence.maxAssets),label:'asset'}} as const;
+   const state=map[limit];
+   if(state.max>0&&state.used>=state.max){
+    await audit(licence.id,'LIMIT_BLOCKED',`${state.label} limit reached (${state.used}/${state.max}) for ${req.method} ${req.originalUrl}`,req.authUser?.email||'Unknown user');
+    return res.status(409).json({error:`licence ${state.label} limit reached (${state.used}/${state.max})`,code:'LICENCE_LIMIT_REACHED',limit,used:state.used,max:state.max});
+   }
+   next();
+  }catch(error){next(error)}};
  }
 
  function registerRoutes(app:express.Application,requireRoles:RequireRoles){
   app.get('/api/licensing/status',async(_req,res,next)=>{try{res.json(await current())}catch(error){next(error)}});
   app.get('/api/licensing/audit',requireRoles('Administrator'),async(_req,res,next)=>{try{await ensureSchema();const r=await pool.query(`SELECT id,action,detail,actor,created_at AS "createdAt" FROM licence_audit ORDER BY id DESC LIMIT 100`);res.json(r.rows)}catch(error){next(error)}});
-  app.patch('/api/licensing',requireRoles('Administrator'),async(req,res,next)=>{try{
+  app.patch('/api/licensing',requireRoles('Administrator'),async(req:any,res,next)=>{try{
    await ensureSchema();const lic=await current();if(!lic)return res.status(404).json({error:'licence not found'});
    const type=req.body?.licenceType!==undefined?String(req.body.licenceType):lic.licenceType;const plan=req.body?.planName!==undefined?String(req.body.planName):lic.planName;const status=req.body?.status!==undefined?String(req.body.status):'Active';
    const maxUsers=req.body?.maxUsers!==undefined?Math.max(1,Number(req.body.maxUsers)):lic.maxUsers;const maxSites=req.body?.maxSites!==undefined?Math.max(1,Number(req.body.maxSites)):lic.maxSites;const maxAssets=req.body?.maxAssets!==undefined?Math.max(1,Number(req.body.maxAssets)):lic.maxAssets;
    const trialEndsAt=req.body?.trialEndsAt!==undefined?(req.body.trialEndsAt||null):lic.trialEndsAt;const expiresAt=req.body?.expiresAt!==undefined?(req.body.expiresAt||null):lic.expiresAt;
    await pool.query(`UPDATE licences SET licence_type=$1,plan_name=$2,status=$3,max_users=$4,max_sites=$5,max_assets=$6,trial_ends_at=$7,expires_at=$8,updated_at=NOW() WHERE id=$9`,[type,plan,status,maxUsers,maxSites,maxAssets,trialEndsAt,expiresAt,lic.id]);
    if(req.body?.entitlements&&typeof req.body.entitlements==='object')for(const p of PRODUCTS)if(req.body.entitlements[p]!==undefined)await pool.query(`INSERT INTO licence_entitlements(licence_id,product_code,enabled) VALUES($1,$2,$3) ON CONFLICT(licence_id,product_code) DO UPDATE SET enabled=EXCLUDED.enabled`,[lic.id,p,Boolean(req.body.entitlements[p])]);
-   await pool.query(`INSERT INTO licence_audit(licence_id,action,detail,actor) VALUES($1,'LICENCE_UPDATED',$2,$3)`,[lic.id,'Licence settings or entitlements updated',req.authUser?.email||'Administrator']);res.json(await current())
+   await audit(lic.id,'LICENCE_UPDATED','Licence settings, limits or entitlements updated',req.authUser?.email||'Administrator');
+   res.json(await current());
   }catch(error){next(error)}});
  }
- return {ensureSchema,current,entitlement,writable,requireEntitlement,registerRoutes,products:PRODUCTS};
+ return {ensureSchema,current,entitlement,writable,requireEntitlement,requireLimit,registerRoutes,products:PRODUCTS};
 }
