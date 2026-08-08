@@ -106,6 +106,50 @@ async function initDatabase() {
       UNIQUE(site_id, code)
     );
 
+    CREATE TABLE IF NOT EXISTS server_rooms (
+      id SERIAL PRIMARY KEY,
+      site_id INTEGER NOT NULL REFERENCES sites(id) ON DELETE CASCADE,
+      location_id INTEGER REFERENCES locations(id) ON DELETE SET NULL,
+      code VARCHAR(40) NOT NULL,
+      name VARCHAR(160) NOT NULL,
+      floor VARCHAR(40) DEFAULT '',
+      owner VARCHAR(120) DEFAULT '',
+      status VARCHAR(40) NOT NULL DEFAULT 'Operational',
+      max_racks INTEGER NOT NULL DEFAULT 20,
+      power_capacity_kw NUMERIC(10,2) NOT NULL DEFAULT 0,
+      cooling_capacity_kw NUMERIC(10,2) NOT NULL DEFAULT 0,
+      notes TEXT DEFAULT '',
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      UNIQUE(site_id, code)
+    );
+
+    CREATE TABLE IF NOT EXISTS racks (
+      id SERIAL PRIMARY KEY,
+      server_room_id INTEGER NOT NULL REFERENCES server_rooms(id) ON DELETE CASCADE,
+      rack_code VARCHAR(40) NOT NULL,
+      name VARCHAR(160) NOT NULL,
+      manufacturer VARCHAR(120) DEFAULT '',
+      model VARCHAR(160) DEFAULT '',
+      rack_units INTEGER NOT NULL DEFAULT 42,
+      width_mm INTEGER NOT NULL DEFAULT 600,
+      depth_mm INTEGER NOT NULL DEFAULT 1000,
+      max_weight_kg NUMERIC(10,2) NOT NULL DEFAULT 0,
+      power_capacity_kw NUMERIC(10,2) NOT NULL DEFAULT 0,
+      cooling_capacity_kw NUMERIC(10,2) NOT NULL DEFAULT 0,
+      asset_tag VARCHAR(120) DEFAULT '',
+      serial_number VARCHAR(160) DEFAULT '',
+      owner VARCHAR(120) DEFAULT '',
+      department VARCHAR(120) DEFAULT '',
+      status VARCHAR(40) NOT NULL DEFAULT 'Operational',
+      lifecycle_state VARCHAR(40) NOT NULL DEFAULT 'Installed',
+      position_label VARCHAR(80) DEFAULT '',
+      notes TEXT DEFAULT '',
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      UNIQUE(server_room_id, rack_code)
+    );
+
     CREATE TABLE IF NOT EXISTS incidents (
       id SERIAL PRIMARY KEY,
       number VARCHAR(20) UNIQUE NOT NULL,
@@ -164,6 +208,18 @@ async function initDatabase() {
       ($1,'OFF-01','Main Office','Office',$2,'Ground','Operational')`, [site.id, building.id]);
   }
 
+  const roomCount = Number((await pool.query('SELECT COUNT(*)::int AS count FROM server_rooms')).rows[0].count);
+  if (roomCount === 0) {
+    const site = (await pool.query("SELECT id FROM sites WHERE code='WKG-01' LIMIT 1")).rows[0];
+    const location = site ? (await pool.query("SELECT id,floor FROM locations WHERE site_id=$1 AND code='SR-01' LIMIT 1", [site.id])).rows[0] : null;
+    if (site) {
+      const room = (await pool.query(`INSERT INTO server_rooms (site_id,location_id,code,name,floor,owner,status,max_racks,power_capacity_kw,cooling_capacity_kw,notes)
+        VALUES ($1,$2,'SR-01','Server Room 1',$3,'Infrastructure','Operational',20,80,65,'Seed server room created from the v5 location model.') RETURNING id`, [site.id, location?.id || null, location?.floor || 'Ground'])).rows[0];
+      await pool.query(`INSERT INTO racks (server_room_id,rack_code,name,manufacturer,model,rack_units,width_mm,depth_mm,max_weight_kg,power_capacity_kw,cooling_capacity_kw,asset_tag,owner,department,status,lifecycle_state,position_label)
+        VALUES ($1,'RACK-01','Core Rack 01','APC','NetShelter SX',42,600,1070,1360,8,8,'RACK-WKG-001','Infrastructure','Infrastructure','Operational','Installed','Row A / Position 01')`, [room.id]);
+    }
+  }
+
   const incidentCount = Number((await pool.query('SELECT COUNT(*)::int AS count FROM incidents')).rows[0].count);
   if (incidentCount === 0) await pool.query(`INSERT INTO incidents (number,title,description,priority,status,assignment_group,caller,asset) VALUES
     ('INC000001','VPN access unavailable','Remote user cannot establish VPN connection.','P2','In Progress','Service Desk','A. User','LT-0142'),
@@ -190,8 +246,8 @@ async function initDatabase() {
 }
 
 app.get('/health', async (_req,res) => {
-  try { await pool.query('SELECT 1'); res.json({ ok:true, app:'OpsCore API', version:'v5', database:'connected', auth:'enabled', locations:'enabled' }); }
-  catch { res.status(503).json({ ok:false, app:'OpsCore API', version:'v5', database:'unavailable' }); }
+  try { await pool.query('SELECT 1'); res.json({ ok:true, app:'OpsCore API', version:'v6', database:'connected', auth:'enabled', infrastructure:'server-rooms-racks' }); }
+  catch { res.status(503).json({ ok:false, app:'OpsCore API', version:'v6', database:'unavailable' }); }
 });
 
 app.post('/auth/login', async (req,res,next) => {
@@ -208,19 +264,21 @@ app.post('/auth/login', async (req,res,next) => {
 });
 
 app.get('/auth/me', authRequired, (req,res) => res.json({ user:req.authUser }));
-app.get('/api/platform', authRequired, (_req,res) => res.json({ name:'OpsCore', version:'v5', modules:[{key:'service',name:'OpsCore Service',status:'active'},{key:'infrastructure',name:'OpsCore Infrastructure',status:'site-foundation-active'},{key:'compliance',name:'OpsCore Compliance',status:'site-foundation-active'}] }));
+app.get('/api/platform', authRequired, (_req,res) => res.json({ name:'OpsCore', version:'v6', modules:[{key:'service',name:'OpsCore Service',status:'active'},{key:'infrastructure',name:'OpsCore Infrastructure',status:'server-rooms-racks-live'},{key:'compliance',name:'OpsCore Compliance',status:'site-foundation-active'}] }));
 
 app.use('/api', authRequired);
 
 app.get('/api/dashboard', async (_req,res,next) => { try {
-  const [incidents,requests,assets,users,sites,locations] = await Promise.all([
+  const [incidents,requests,assets,users,sites,locations,serverRooms,racks] = await Promise.all([
     pool.query("SELECT COUNT(*)::int AS count FROM incidents WHERE status <> 'Closed'"),
     pool.query('SELECT COUNT(*)::int AS count FROM service_requests'),
     pool.query('SELECT COUNT(*)::int AS count FROM assets'),
     pool.query('SELECT COUNT(*)::int AS count FROM users WHERE active=TRUE'),
     pool.query("SELECT COUNT(*)::int AS count FROM sites WHERE status <> 'Retired'"),
-    pool.query("SELECT COUNT(*)::int AS count FROM locations WHERE status <> 'Retired'")]);
-  res.json({incidents:incidents.rows[0].count,requests:requests.rows[0].count,assets:assets.rows[0].count,users:users.rows[0].count,sites:sites.rows[0].count,locations:locations.rows[0].count,slaBreaches:0,changes:0,audits:0,serverRooms:0});
+    pool.query("SELECT COUNT(*)::int AS count FROM locations WHERE status <> 'Retired'"),
+    pool.query("SELECT COUNT(*)::int AS count FROM server_rooms WHERE status <> 'Retired'"),
+    pool.query("SELECT COUNT(*)::int AS count FROM racks WHERE lifecycle_state <> 'Retired'")]);
+  res.json({incidents:incidents.rows[0].count,requests:requests.rows[0].count,assets:assets.rows[0].count,users:users.rows[0].count,sites:sites.rows[0].count,locations:locations.rows[0].count,serverRooms:serverRooms.rows[0].count,racks:racks.rows[0].count,slaBreaches:0,changes:0,audits:0});
 } catch(error){next(error);} });
 
 app.get('/api/sites', async (_req,res,next)=>{ try {
@@ -231,50 +289,97 @@ app.get('/api/sites', async (_req,res,next)=>{ try {
 } catch(error){next(error);} });
 
 app.post('/api/sites', requireRoles('Administrator','Infrastructure'), async (req,res,next)=>{ try {
-  const code=String(req.body?.code||'').trim().toUpperCase();
-  const name=String(req.body?.name||'').trim();
-  const siteType=String(req.body?.siteType||'Office').trim();
-  const address1=String(req.body?.address1||'').trim();
-  const city=String(req.body?.city||'').trim();
-  const postcode=String(req.body?.postcode||'').trim().toUpperCase();
-  const country=String(req.body?.country||'United Kingdom').trim();
-  const owner=String(req.body?.owner||'').trim();
-  const status=String(req.body?.status||'Operational').trim();
-  const notes=String(req.body?.notes||'').trim();
+  const code=String(req.body?.code||'').trim().toUpperCase(); const name=String(req.body?.name||'').trim(); const siteType=String(req.body?.siteType||'Office').trim();
+  const address1=String(req.body?.address1||'').trim(); const city=String(req.body?.city||'').trim(); const postcode=String(req.body?.postcode||'').trim().toUpperCase();
+  const country=String(req.body?.country||'United Kingdom').trim(); const owner=String(req.body?.owner||'').trim(); const status=String(req.body?.status||'Operational').trim(); const notes=String(req.body?.notes||'').trim();
   if(!code||!name)return res.status(400).json({error:'site code and name are required'});
   const r=await pool.query(`INSERT INTO sites (code,name,site_type,address1,city,postcode,country,owner,status,notes) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)
-    RETURNING id,code,name,site_type AS "siteType",address1,city,postcode,country,owner,status,notes`,[code,name,siteType,address1,city,postcode,country,owner,status,notes]);
-  res.status(201).json(r.rows[0]);
+    RETURNING id,code,name,site_type AS "siteType",address1,city,postcode,country,owner,status,notes`,[code,name,siteType,address1,city,postcode,country,owner,status,notes]); res.status(201).json(r.rows[0]);
 } catch(error:any){ if(error?.code==='23505')return res.status(409).json({error:'site code already exists'}); next(error);} });
 
 app.patch('/api/sites/:id', requireRoles('Administrator','Infrastructure'), async (req,res,next)=>{ try {
-  const allowed=['name','site_type','address1','city','postcode','country','owner','status','notes'];
-  const map:Record<string,string>={siteType:'site_type'};
-  const entries=Object.entries(req.body||{}).map(([k,v])=>[map[k]||k,v]).filter(([k])=>allowed.includes(String(k)));
-  if(!entries.length)return res.status(400).json({error:'no valid fields supplied'});
+  const allowed=['name','site_type','address1','city','postcode','country','owner','status','notes']; const map:Record<string,string>={siteType:'site_type'};
+  const entries=Object.entries(req.body||{}).map(([k,v])=>[map[k]||k,v]).filter(([k])=>allowed.includes(String(k))); if(!entries.length)return res.status(400).json({error:'no valid fields supplied'});
   const values=entries.map(([,v])=>v); const sets=entries.map(([k],i)=>`${k}=$${i+1}`); values.push(Number(req.params.id));
   const r=await pool.query(`UPDATE sites SET ${sets.join(',')},updated_at=NOW() WHERE id=$${values.length} RETURNING id,code,name,site_type AS "siteType",address1,city,postcode,country,owner,status,notes`,values);
   if(!r.rows[0])return res.status(404).json({error:'site not found'}); res.json(r.rows[0]);
 } catch(error){next(error);} });
 
+app.get('/api/locations', async (_req,res,next)=>{ try {
+  const r=await pool.query(`SELECT l.id,l.site_id AS "siteId",s.name AS "siteName",l.code,l.name,l.location_type AS "locationType",l.parent_location_id AS "parentLocationId",p.name AS "parentName",l.floor,l.status,l.notes
+    FROM locations l JOIN sites s ON s.id=l.site_id LEFT JOIN locations p ON p.id=l.parent_location_id ORDER BY s.name,l.location_type,l.name`); res.json(r.rows);
+} catch(error){next(error);} });
+
 app.get('/api/sites/:id/locations', async (req,res,next)=>{ try {
   const r=await pool.query(`SELECT l.id,l.site_id AS "siteId",l.code,l.name,l.location_type AS "locationType",l.parent_location_id AS "parentLocationId",p.name AS "parentName",l.floor,l.status,l.notes,COUNT(a.id)::int AS "assetCount"
     FROM locations l LEFT JOIN locations p ON p.id=l.parent_location_id LEFT JOIN assets a ON a.location_id=l.id
-    WHERE l.site_id=$1 GROUP BY l.id,p.name ORDER BY l.location_type,l.name`,[Number(req.params.id)]);
-  res.json(r.rows);
+    WHERE l.site_id=$1 GROUP BY l.id,p.name ORDER BY l.location_type,l.name`,[Number(req.params.id)]); res.json(r.rows);
 } catch(error){next(error);} });
 
 app.post('/api/sites/:id/locations', requireRoles('Administrator','Infrastructure'), async (req,res,next)=>{ try {
   const siteId=Number(req.params.id); const code=String(req.body?.code||'').trim().toUpperCase(); const name=String(req.body?.name||'').trim();
   const locationType=String(req.body?.locationType||'Room').trim(); const floor=String(req.body?.floor||'').trim(); const status=String(req.body?.status||'Operational').trim(); const notes=String(req.body?.notes||'').trim();
-  const parentLocationId=req.body?.parentLocationId ? Number(req.body.parentLocationId) : null;
-  if(!code||!name)return res.status(400).json({error:'location code and name are required'});
+  const parentLocationId=req.body?.parentLocationId ? Number(req.body.parentLocationId) : null; if(!code||!name)return res.status(400).json({error:'location code and name are required'});
   const siteExists=(await pool.query('SELECT id FROM sites WHERE id=$1',[siteId])).rows[0]; if(!siteExists)return res.status(404).json({error:'site not found'});
   if(parentLocationId){const parent=(await pool.query('SELECT id FROM locations WHERE id=$1 AND site_id=$2',[parentLocationId,siteId])).rows[0];if(!parent)return res.status(400).json({error:'parent location must belong to the same site'});}
   const r=await pool.query(`INSERT INTO locations (site_id,code,name,location_type,parent_location_id,floor,status,notes) VALUES ($1,$2,$3,$4,$5,$6,$7,$8)
-    RETURNING id,site_id AS "siteId",code,name,location_type AS "locationType",parent_location_id AS "parentLocationId",floor,status,notes`,[siteId,code,name,locationType,parentLocationId,floor,status,notes]);
-  res.status(201).json(r.rows[0]);
+    RETURNING id,site_id AS "siteId",code,name,location_type AS "locationType",parent_location_id AS "parentLocationId",floor,status,notes`,[siteId,code,name,locationType,parentLocationId,floor,status,notes]); res.status(201).json(r.rows[0]);
 } catch(error:any){ if(error?.code==='23505')return res.status(409).json({error:'location code already exists at this site'}); next(error);} });
+
+app.get('/api/server-rooms', async (_req,res,next)=>{ try {
+  const r=await pool.query(`SELECT sr.id,sr.site_id AS "siteId",s.name AS "siteName",sr.location_id AS "locationId",l.name AS "locationName",sr.code,sr.name,sr.floor,sr.owner,sr.status,sr.max_racks AS "maxRacks",sr.power_capacity_kw::float AS "powerCapacityKw",sr.cooling_capacity_kw::float AS "coolingCapacityKw",sr.notes,COUNT(r.id)::int AS "rackCount"
+    FROM server_rooms sr JOIN sites s ON s.id=sr.site_id LEFT JOIN locations l ON l.id=sr.location_id LEFT JOIN racks r ON r.server_room_id=sr.id
+    GROUP BY sr.id,s.name,l.name ORDER BY s.name,sr.name`); res.json(r.rows);
+} catch(error){next(error);} });
+
+app.post('/api/server-rooms', requireRoles('Administrator','Infrastructure'), async (req,res,next)=>{ try {
+  const siteId=Number(req.body?.siteId); const locationId=req.body?.locationId ? Number(req.body.locationId) : null; const code=String(req.body?.code||'').trim().toUpperCase(); const name=String(req.body?.name||'').trim();
+  const floor=String(req.body?.floor||'').trim(); const owner=String(req.body?.owner||'').trim(); const status=String(req.body?.status||'Operational').trim(); const maxRacks=Math.max(1,Number(req.body?.maxRacks||20));
+  const powerCapacityKw=Math.max(0,Number(req.body?.powerCapacityKw||0)); const coolingCapacityKw=Math.max(0,Number(req.body?.coolingCapacityKw||0)); const notes=String(req.body?.notes||'').trim();
+  if(!siteId||!code||!name)return res.status(400).json({error:'site, room code and room name are required'});
+  const site=(await pool.query('SELECT id FROM sites WHERE id=$1',[siteId])).rows[0]; if(!site)return res.status(400).json({error:'invalid site'});
+  if(locationId){const loc=(await pool.query('SELECT id,site_id FROM locations WHERE id=$1',[locationId])).rows[0];if(!loc||loc.site_id!==siteId)return res.status(400).json({error:'location must belong to the selected site'});}
+  const r=await pool.query(`INSERT INTO server_rooms (site_id,location_id,code,name,floor,owner,status,max_racks,power_capacity_kw,cooling_capacity_kw,notes) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)
+    RETURNING id,site_id AS "siteId",location_id AS "locationId",code,name,floor,owner,status,max_racks AS "maxRacks",power_capacity_kw::float AS "powerCapacityKw",cooling_capacity_kw::float AS "coolingCapacityKw",notes`,[siteId,locationId,code,name,floor,owner,status,maxRacks,powerCapacityKw,coolingCapacityKw,notes]); res.status(201).json(r.rows[0]);
+} catch(error:any){if(error?.code==='23505')return res.status(409).json({error:'server room code already exists at this site'});next(error);} });
+
+app.patch('/api/server-rooms/:id', requireRoles('Administrator','Infrastructure'), async (req,res,next)=>{ try {
+  const allowed=['name','floor','owner','status','max_racks','power_capacity_kw','cooling_capacity_kw','notes']; const map:Record<string,string>={maxRacks:'max_racks',powerCapacityKw:'power_capacity_kw',coolingCapacityKw:'cooling_capacity_kw'};
+  const entries=Object.entries(req.body||{}).map(([k,v])=>[map[k]||k,v]).filter(([k])=>allowed.includes(String(k))); if(!entries.length)return res.status(400).json({error:'no valid fields supplied'});
+  const values=entries.map(([,v])=>v); const sets=entries.map(([k],i)=>`${k}=$${i+1}`); values.push(Number(req.params.id));
+  const r=await pool.query(`UPDATE server_rooms SET ${sets.join(',')},updated_at=NOW() WHERE id=$${values.length} RETURNING id,site_id AS "siteId",location_id AS "locationId",code,name,floor,owner,status,max_racks AS "maxRacks",power_capacity_kw::float AS "powerCapacityKw",cooling_capacity_kw::float AS "coolingCapacityKw",notes`,values);
+  if(!r.rows[0])return res.status(404).json({error:'server room not found'}); res.json(r.rows[0]);
+} catch(error){next(error);} });
+
+app.get('/api/racks', async (req,res,next)=>{ try {
+  const roomId=req.query.serverRoomId ? Number(req.query.serverRoomId) : null;
+  const params:any[]=[]; let where=''; if(roomId){params.push(roomId);where='WHERE r.server_room_id=$1';}
+  const result=await pool.query(`SELECT r.id,r.server_room_id AS "serverRoomId",sr.name AS "serverRoomName",sr.code AS "serverRoomCode",s.name AS "siteName",r.rack_code AS "rackCode",r.name,r.manufacturer,r.model,r.rack_units AS "rackUnits",r.width_mm AS "widthMm",r.depth_mm AS "depthMm",r.max_weight_kg::float AS "maxWeightKg",r.power_capacity_kw::float AS "powerCapacityKw",r.cooling_capacity_kw::float AS "coolingCapacityKw",r.asset_tag AS "assetTag",r.serial_number AS "serialNumber",r.owner,r.department,r.status,r.lifecycle_state AS "lifecycleState",r.position_label AS "positionLabel",r.notes,0::int AS "occupiedUnits"
+    FROM racks r JOIN server_rooms sr ON sr.id=r.server_room_id JOIN sites s ON s.id=sr.site_id ${where} ORDER BY s.name,sr.name,r.rack_code`,params); res.json(result.rows);
+} catch(error){next(error);} });
+
+app.post('/api/racks', requireRoles('Administrator','Infrastructure'), async (req,res,next)=>{ try {
+  const serverRoomId=Number(req.body?.serverRoomId); const rackCode=String(req.body?.rackCode||'').trim().toUpperCase(); const name=String(req.body?.name||'').trim(); const rackUnits=Number(req.body?.rackUnits||42);
+  const manufacturer=String(req.body?.manufacturer||'').trim(); const model=String(req.body?.model||'').trim(); const widthMm=Number(req.body?.widthMm||600); const depthMm=Number(req.body?.depthMm||1000);
+  const maxWeightKg=Math.max(0,Number(req.body?.maxWeightKg||0)); const powerCapacityKw=Math.max(0,Number(req.body?.powerCapacityKw||0)); const coolingCapacityKw=Math.max(0,Number(req.body?.coolingCapacityKw||0));
+  const assetTag=String(req.body?.assetTag||'').trim(); const serialNumber=String(req.body?.serialNumber||'').trim(); const owner=String(req.body?.owner||'').trim(); const department=String(req.body?.department||'').trim();
+  const status=String(req.body?.status||'Operational').trim(); const lifecycleState=String(req.body?.lifecycleState||'Installed').trim(); const positionLabel=String(req.body?.positionLabel||'').trim(); const notes=String(req.body?.notes||'').trim();
+  if(!serverRoomId||!rackCode||!name)return res.status(400).json({error:'server room, rack code and name are required'}); if(!Number.isInteger(rackUnits)||rackUnits<1||rackUnits>60)return res.status(400).json({error:'rack units must be between 1 and 60'});
+  const room=(await pool.query('SELECT id,max_racks FROM server_rooms WHERE id=$1',[serverRoomId])).rows[0]; if(!room)return res.status(400).json({error:'invalid server room'});
+  const current=Number((await pool.query('SELECT COUNT(*)::int AS count FROM racks WHERE server_room_id=$1',[serverRoomId])).rows[0].count); if(current>=Number(room.max_racks))return res.status(409).json({error:'server room rack capacity reached'});
+  const r=await pool.query(`INSERT INTO racks (server_room_id,rack_code,name,manufacturer,model,rack_units,width_mm,depth_mm,max_weight_kg,power_capacity_kw,cooling_capacity_kw,asset_tag,serial_number,owner,department,status,lifecycle_state,position_label,notes)
+    VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19)
+    RETURNING id,server_room_id AS "serverRoomId",rack_code AS "rackCode",name,manufacturer,model,rack_units AS "rackUnits",width_mm AS "widthMm",depth_mm AS "depthMm",max_weight_kg::float AS "maxWeightKg",power_capacity_kw::float AS "powerCapacityKw",cooling_capacity_kw::float AS "coolingCapacityKw",asset_tag AS "assetTag",serial_number AS "serialNumber",owner,department,status,lifecycle_state AS "lifecycleState",position_label AS "positionLabel",notes`,[serverRoomId,rackCode,name,manufacturer,model,rackUnits,widthMm,depthMm,maxWeightKg,powerCapacityKw,coolingCapacityKw,assetTag,serialNumber,owner,department,status,lifecycleState,positionLabel,notes]); res.status(201).json(r.rows[0]);
+} catch(error:any){if(error?.code==='23505')return res.status(409).json({error:'rack code already exists in this server room'});next(error);} });
+
+app.patch('/api/racks/:id', requireRoles('Administrator','Infrastructure'), async (req,res,next)=>{ try {
+  const allowed=['name','manufacturer','model','rack_units','width_mm','depth_mm','max_weight_kg','power_capacity_kw','cooling_capacity_kw','asset_tag','serial_number','owner','department','status','lifecycle_state','position_label','notes'];
+  const map:Record<string,string>={rackUnits:'rack_units',widthMm:'width_mm',depthMm:'depth_mm',maxWeightKg:'max_weight_kg',powerCapacityKw:'power_capacity_kw',coolingCapacityKw:'cooling_capacity_kw',assetTag:'asset_tag',serialNumber:'serial_number',lifecycleState:'lifecycle_state',positionLabel:'position_label'};
+  const entries=Object.entries(req.body||{}).map(([k,v])=>[map[k]||k,v]).filter(([k])=>allowed.includes(String(k))); if(!entries.length)return res.status(400).json({error:'no valid fields supplied'});
+  const values=entries.map(([,v])=>v); const sets=entries.map(([k],i)=>`${k}=$${i+1}`); values.push(Number(req.params.id));
+  const r=await pool.query(`UPDATE racks SET ${sets.join(',')},updated_at=NOW() WHERE id=$${values.length} RETURNING id,server_room_id AS "serverRoomId",rack_code AS "rackCode",name,manufacturer,model,rack_units AS "rackUnits",width_mm AS "widthMm",depth_mm AS "depthMm",max_weight_kg::float AS "maxWeightKg",power_capacity_kw::float AS "powerCapacityKw",cooling_capacity_kw::float AS "coolingCapacityKw",asset_tag AS "assetTag",serial_number AS "serialNumber",owner,department,status,lifecycle_state AS "lifecycleState",position_label AS "positionLabel",notes`,values);
+  if(!r.rows[0])return res.status(404).json({error:'rack not found'}); res.json(r.rows[0]);
+} catch(error){next(error);} });
 
 app.get('/api/incidents', async (_req,res,next)=>{ try { const r=await pool.query(`SELECT number AS id,title,description,priority,status,assignment_group AS "assignmentGroup",caller,asset,opened_at AS "openedAt",updated_at AS "updatedAt" FROM incidents ORDER BY id DESC`); res.json(r.rows);} catch(error){next(error);} });
 app.post('/api/incidents', requireRoles('Administrator','Service Desk','Engineer','Infrastructure'), async (req,res,next)=>{ try { const {title,description='',priority='P3',assignmentGroup='Service Desk',caller='Portal User',asset='Unassigned'}=req.body||{}; if(!title||!String(title).trim())return res.status(400).json({error:'title is required'}); const seq=Number((await pool.query('SELECT COALESCE(MAX(id),0)+1 AS next FROM incidents')).rows[0].next); const number=`INC${String(seq).padStart(6,'0')}`; const r=await pool.query(`INSERT INTO incidents (number,title,description,priority,status,assignment_group,caller,asset) VALUES ($1,$2,$3,$4,'Open',$5,$6,$7) RETURNING number AS id,title,description,priority,status,assignment_group AS "assignmentGroup",caller,asset`,[number,String(title).trim(),description,priority,assignmentGroup,caller,asset]); res.status(201).json(r.rows[0]); } catch(error){next(error);} });
@@ -287,8 +392,7 @@ app.get('/api/assets', async (_req,res,next)=>{ try {
 } catch(error){next(error);} });
 app.post('/api/assets', requireRoles('Administrator','Engineer','Infrastructure'), async (req,res,next)=>{ try {
   const {name,type='Other',owner='',state='Operational',serialNumber='',model=''}=req.body||{}; if(!name||!String(name).trim())return res.status(400).json({error:'name is required'});
-  const siteId=req.body?.siteId ? Number(req.body.siteId) : null; const locationId=req.body?.locationId ? Number(req.body.locationId) : null;
-  let siteName=String(req.body?.site||'').trim();
+  const siteId=req.body?.siteId ? Number(req.body.siteId) : null; const locationId=req.body?.locationId ? Number(req.body.locationId) : null; let siteName=String(req.body?.site||'').trim();
   if(siteId){const site=(await pool.query('SELECT id,name FROM sites WHERE id=$1',[siteId])).rows[0];if(!site)return res.status(400).json({error:'invalid site'});siteName=site.name;}
   if(locationId){const location=(await pool.query('SELECT id,site_id FROM locations WHERE id=$1',[locationId])).rows[0];if(!location|| (siteId && location.site_id!==siteId))return res.status(400).json({error:'invalid location for selected site'});}
   const seq=Number((await pool.query('SELECT COALESCE(MAX(id),0)+1 AS next FROM assets')).rows[0].next); const assetNumber=`AST-${String(seq).padStart(6,'0')}`;
@@ -300,4 +404,4 @@ app.post('/api/users', requireRoles('Administrator'), async (req,res,next)=>{ tr
 
 app.use((error:unknown,_req:express.Request,res:express.Response,_next:express.NextFunction)=>{ console.error(error); res.status(500).json({error:'internal server error'}); });
 
-initDatabase().then(()=>app.listen(port,'0.0.0.0',()=>console.log(`OpsCore API v5 listening on ${port}`))).catch(error=>{ console.error('OpsCore database initialisation failed',error); process.exit(1); });
+initDatabase().then(()=>app.listen(port,'0.0.0.0',()=>console.log(`OpsCore API v6 listening on ${port}`))).catch(error=>{ console.error('OpsCore database initialisation failed',error); process.exit(1); });
