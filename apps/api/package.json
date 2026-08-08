@@ -1,12 +1,12 @@
 {
   "name": "opscore-api",
-  "version": "6.0.0",
+  "version": "7.0.0",
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "tsx watch src/server.ts",
+    "dev": "tsx watch src/server-v7.ts",
     "build": "tsc -p tsconfig.json",
-    "start": "node dist/server.js"
+    "start": "node dist/server-v7.js"
   },
   "dependencies": {
     "cors": "^2.8.5",
