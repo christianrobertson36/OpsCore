@@ -224,7 +224,7 @@ app.get('/api/dashboard', async (_req,res,next) => { try {
 } catch(error){next(error);} });
 
 app.get('/api/sites', async (_req,res,next)=>{ try {
-  const r=await pool.query(`SELECT s.id,s.code,s.name,s.site_type AS "siteType",s.address1,s.city,s.postcode,s.country,s.owner,s.status,s.notes,s.created_at AS "createdAt",COUNT(l.id)::int AS "locationCount",COUNT(a.id)::int AS "assetCount"
+  const r=await pool.query(`SELECT s.id,s.code,s.name,s.site_type AS "siteType",s.address1,s.city,s.postcode,s.country,s.owner,s.status,s.notes,s.created_at AS "createdAt",COUNT(DISTINCT l.id)::int AS "locationCount",COUNT(DISTINCT a.id)::int AS "assetCount"
     FROM sites s LEFT JOIN locations l ON l.site_id=s.id LEFT JOIN assets a ON a.site_id=s.id
     GROUP BY s.id ORDER BY s.name`);
   res.json(r.rows);
