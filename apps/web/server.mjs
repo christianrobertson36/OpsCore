@@ -32,18 +32,18 @@ function proxyToApi(req, res) {
   });
 
   proxyReq.on('error', error => {
-    console.error('OpsCore API proxy error', error.message);
-    if (!res.headersSent) res.status(502).json({ error: 'OpsCore API unavailable' });
+    console.error('Core Ops Workflow API proxy error', error.message);
+    if (!res.headersSent) res.status(502).json({ error: 'Core Ops Workflow API unavailable' });
     else res.end();
   });
 
   req.pipe(proxyReq);
 }
 
-app.get('/health', (_req, res) => res.json({ ok: true, app: 'OpsCore Web', version: 'v9', apiProxy: apiUrl.origin, equipment: 'half-u-depth-aware', licensing: 'enabled' }));
+app.get('/health', (_req, res) => res.json({ ok: true, app: 'Core Ops Workflow Web', version: 'v10', apiProxy: apiUrl.origin, equipment: 'half-u-depth-aware', licensing: 'enabled', brand: 'core-ops-workflow' }));
 app.use('/api', proxyToApi);
 app.use('/auth', proxyToApi);
 app.use(express.static(dist));
 app.use((_req, res) => res.sendFile(path.join(dist, 'index.html')));
 
-app.listen(port, '0.0.0.0', () => console.log(`OpsCore Web v9 listening on ${port}; API proxy ${apiUrl.origin}`));
+app.listen(port, '0.0.0.0', () => console.log(`Core Ops Workflow Web v10 listening on ${port}; API proxy ${apiUrl.origin}`));
