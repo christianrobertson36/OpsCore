@@ -146,8 +146,9 @@ export function createLicensingV9(pool:pg.Pool){
   const body:any=await response.json().catch(()=>({}));
   if(!response.ok)throw new Error(body.error||`Central licensing HTTP ${response.status}`);
   const remote=body.licence||{};
+  const cachedStatus=remote.status==='Grace'||remote.status==='Expired'?'Active':(remote.status||lic.status);
   await pool.query(`UPDATE licences SET licence_key=$1,licence_type=$2,plan_name=$3,status=$4,trial_ends_at=$5,expires_at=$6,grace_ends_at=$7,max_users=$8,max_sites=$9,max_assets=$10,notes=$11,updated_at=NOW() WHERE id=$12`,[
-   centralLicenceKey,remote.type||lic.licenceType,remote.planName||lic.planName,remote.status||lic.status,remote.trialEndsAt||null,remote.expiresAt||null,remote.graceEndsAt||null,Math.max(1,Number(remote.maxUsers||lic.maxUsers)),Math.max(1,Number(remote.maxSites||lic.maxSites)),Math.max(1,Number(remote.maxAssets||lic.maxAssets)),'Cached from Core Ops Licensing Portal',lic.id
+   centralLicenceKey,remote.type||lic.licenceType,remote.planName||lic.planName,cachedStatus,remote.trialEndsAt||null,remote.expiresAt||null,remote.graceEndsAt||null,Math.max(1,Number(remote.maxUsers||lic.maxUsers)),Math.max(1,Number(remote.maxSites||lic.maxSites)),Math.max(1,Number(remote.maxAssets||lic.maxAssets)),'Cached from Core Ops Licensing Portal',lic.id
   ]);
   if(remote.entitlements&&typeof remote.entitlements==='object')for(const p of PRODUCTS)await pool.query(`INSERT INTO licence_entitlements(licence_id,product_code,enabled) VALUES($1,$2,$3) ON CONFLICT(licence_id,product_code) DO UPDATE SET enabled=EXCLUDED.enabled`,[lic.id,p,Boolean(remote.entitlements[p])]);
   await pool.query(`UPDATE organisations SET name=COALESCE(NULLIF($1,''),name),licensing_mode='Central',central_server_url=$2,last_central_check_at=NOW(),central_status='Connected',updated_at=NOW() WHERE id=$3`,[String(body.customer?.name||''),centralServerUrl,lic.organisationId]);
