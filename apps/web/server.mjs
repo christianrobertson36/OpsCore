@@ -51,7 +51,7 @@ app.use((req, res, next) => {
   next();
 });
 
-app.get('/health', (_req, res) => res.json({ ok: true, app: 'Core Ops Workflow Web', version: 'v10-fix3', apiProxy: apiUrl.origin, equipment: 'half-u-depth-aware', licensing: 'enabled', brand: 'core-ops-workflow', cachePolicy: 'fresh-shell' }));
+app.get('/health', (_req, res) => res.json({ ok: true, app: 'Core Ops Workflow Web', version: 'v13', apiProxy: apiUrl.origin, equipment: 'half-u-depth-aware', licensing: 'enabled', brand: 'core-ops-workflow', cachePolicy: 'fresh-shell' }));
 app.use('/api', proxyToApi);
 app.use('/auth', proxyToApi);
 app.use(express.static(dist, { etag: true, maxAge: 0 }));
@@ -60,4 +60,4 @@ app.use((_req, res) => {
   res.sendFile(path.join(dist, 'index.html'));
 });
 
-app.listen(port, '0.0.0.0', () => console.log(`Core Ops Workflow Web v10-fix3 listening on ${port}; API proxy ${apiUrl.origin}`));
+app.listen(port, '0.0.0.0', () => console.log(`Core Ops Workflow Web v13 listening on ${port}; API proxy ${apiUrl.origin}`));
