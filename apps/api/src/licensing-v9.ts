@@ -23,9 +23,19 @@ export function createLicensingV9(pool:pg.Pool){
     name VARCHAR(180) NOT NULL,
     status VARCHAR(30) NOT NULL DEFAULT 'Active',
     installation_id VARCHAR(80) UNIQUE NOT NULL,
+    licensing_mode VARCHAR(30) NOT NULL DEFAULT 'Local',
+    central_server_url TEXT,
+    last_licence_check_at TIMESTAMPTZ,
+    last_central_check_at TIMESTAMPTZ,
+    central_status VARCHAR(40) NOT NULL DEFAULT 'Not configured',
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
    );
+   ALTER TABLE organisations ADD COLUMN IF NOT EXISTS licensing_mode VARCHAR(30) NOT NULL DEFAULT 'Local';
+   ALTER TABLE organisations ADD COLUMN IF NOT EXISTS central_server_url TEXT;
+   ALTER TABLE organisations ADD COLUMN IF NOT EXISTS last_licence_check_at TIMESTAMPTZ;
+   ALTER TABLE organisations ADD COLUMN IF NOT EXISTS last_central_check_at TIMESTAMPTZ;
+   ALTER TABLE organisations ADD COLUMN IF NOT EXISTS central_status VARCHAR(40) NOT NULL DEFAULT 'Not configured';
    CREATE TABLE IF NOT EXISTS licences(
     id SERIAL PRIMARY KEY,
     organisation_id INTEGER NOT NULL REFERENCES organisations(id) ON DELETE CASCADE,
@@ -63,9 +73,9 @@ export function createLicensingV9(pool:pg.Pool){
   `);
   const orgCount=Number((await pool.query('SELECT COUNT(*)::int AS count FROM organisations')).rows[0].count);
   if(orgCount===0){
-   const org=(await pool.query(`INSERT INTO organisations(organisation_code,name,installation_id) VALUES('LOCAL-001','OpsCore Local Organisation',$1) RETURNING id`,[installationId()])).rows[0];
+   const org=(await pool.query(`INSERT INTO organisations(organisation_code,name,installation_id) VALUES('LOCAL-001','Core Ops Workflow Local Organisation',$1) RETURNING id`,[installationId()])).rows[0];
    const lic=(await pool.query(`INSERT INTO licences(organisation_id,licence_key,licence_type,plan_name,status,trial_ends_at,grace_ends_at,max_users,max_sites,max_assets,notes)
-    VALUES($1,$2,'Trial','Full Suite Trial','Active',NOW()+INTERVAL '30 days',NOW()+INTERVAL '37 days',10,5,1000,'Automatically created by OpsCore v9 licensing foundation.') RETURNING id`,[org.id,licenceKey()])).rows[0];
+    VALUES($1,$2,'Trial','Full Suite Trial','Active',NOW()+INTERVAL '30 days',NOW()+INTERVAL '37 days',10,5,1000,'Automatically created by Core Ops Workflow licensing foundation.') RETURNING id`,[org.id,licenceKey()])).rows[0];
    for(const product of PRODUCTS)await pool.query('INSERT INTO licence_entitlements(licence_id,product_code,enabled) VALUES($1,$2,TRUE)',[lic.id,product]);
    await pool.query(`INSERT INTO licence_audit(licence_id,action,detail,actor) VALUES($1,'TRIAL_CREATED','30-day full-suite trial created automatically','System')`,[lic.id]);
   }
@@ -79,7 +89,7 @@ export function createLicensingV9(pool:pg.Pool){
 
  async function current(){
   await ensureSchema();
-  const row=(await pool.query(`SELECT l.id,l.licence_key AS "licenceKey",l.licence_type AS "licenceType",l.plan_name AS "planName",l.status,l.starts_at AS "startsAt",l.trial_ends_at AS "trialEndsAt",l.expires_at AS "expiresAt",l.grace_ends_at AS "graceEndsAt",l.max_users AS "maxUsers",l.max_sites AS "maxSites",l.max_assets AS "maxAssets",l.notes,o.id AS "organisationId",o.organisation_code AS "organisationCode",o.name AS "organisationName",o.installation_id AS "installationId"
+  const row=(await pool.query(`SELECT l.id,l.licence_key AS "licenceKey",l.licence_type AS "licenceType",l.plan_name AS "planName",l.status,l.starts_at AS "startsAt",l.trial_ends_at AS "trialEndsAt",l.expires_at AS "expiresAt",l.grace_ends_at AS "graceEndsAt",l.max_users AS "maxUsers",l.max_sites AS "maxSites",l.max_assets AS "maxAssets",l.notes,o.id AS "organisationId",o.organisation_code AS "organisationCode",o.name AS "organisationName",o.installation_id AS "installationId",o.licensing_mode AS "licensingMode",o.central_server_url AS "centralServerUrl",o.last_licence_check_at AS "lastLicenceCheckAt",o.last_central_check_at AS "lastCentralCheckAt",o.central_status AS "centralStatus"
    FROM licences l JOIN organisations o ON o.id=l.organisation_id ORDER BY l.id DESC LIMIT 1`)).rows[0];
   if(!row)return null;
   const ent=(await pool.query('SELECT product_code AS "productCode",enabled FROM licence_entitlements WHERE licence_id=$1 ORDER BY product_code',[row.id])).rows;
@@ -90,7 +100,8 @@ export function createLicensingV9(pool:pg.Pool){
   else if(row.licenceType==='Trial'&&trialEnd&&now>trialEnd){mode=grace&&now<=grace?'Read Only':'Expired';effectiveStatus=mode==='Read Only'?'Grace':'Expired'}
   else if(expiry&&now>expiry){mode=grace&&now<=grace?'Read Only':'Expired';effectiveStatus=mode==='Read Only'?'Grace':'Expired'}
   const daysRemaining=trialEnd?Math.max(0,Math.ceil((trialEnd-now)/86400000)):null;
-  return {...row,status:effectiveStatus,mode,daysRemaining,entitlements:Object.fromEntries(PRODUCTS.map(p=>[p,Boolean(ent.find((e:any)=>e.productCode===p)?.enabled)])),usage:{users:users.rows[0].count,sites:sites.rows[0].count,assets:assets.rows[0].count}};
+  await pool.query('UPDATE organisations SET last_licence_check_at=NOW(),updated_at=NOW() WHERE id=$1',[row.organisationId]);
+  return {...row,status:effectiveStatus,mode,daysRemaining,lastLicenceCheckAt:new Date().toISOString(),entitlements:Object.fromEntries(PRODUCTS.map(p=>[p,Boolean(ent.find((e:any)=>e.productCode===p)?.enabled)])),usage:{users:users.rows[0].count,sites:sites.rows[0].count,assets:assets.rows[0].count}};
  }
 
  async function entitlement(product:ProductCode){const licence=await current();return Boolean(licence&&licence.mode!=='Expired'&&licence.mode!=='Blocked'&&licence.entitlements[product])}
@@ -125,6 +136,8 @@ export function createLicensingV9(pool:pg.Pool){
  function registerRoutes(app:express.Application,requireRoles:RequireRoles){
   app.get('/api/licensing/status',async(_req,res,next)=>{try{res.json(await current())}catch(error){next(error)}});
   app.get('/api/licensing/audit',requireRoles('Administrator'),async(_req,res,next)=>{try{await ensureSchema();const r=await pool.query(`SELECT id,action,detail,actor,created_at AS "createdAt" FROM licence_audit ORDER BY id DESC LIMIT 100`);res.json(r.rows)}catch(error){next(error)}});
+  app.get('/api/licensing/installation',requireRoles('Administrator'),async(_req,res,next)=>{try{const lic=await current();if(!lic)return res.status(404).json({error:'licence not found'});res.json({installationId:lic.installationId,licensingMode:lic.licensingMode||'Local',centralServerUrl:lic.centralServerUrl||null,lastLicenceCheckAt:lic.lastLicenceCheckAt||null,lastCentralCheckAt:lic.lastCentralCheckAt||null,centralStatus:lic.centralStatus||'Not configured',product:'Core Ops Workflow',version:'v10'})}catch(error){next(error)}});
+  app.post('/api/licensing/check-in',requireRoles('Administrator'),async(req:any,res,next)=>{try{const lic=await current();if(!lic)return res.status(404).json({error:'licence not found'});await audit(lic.id,'LOCAL_CHECK_IN','Manual local licensing check-in completed',req.authUser?.email||'Administrator');res.json({ok:true,installationId:lic.installationId,mode:lic.licensingMode||'Local',centralStatus:lic.centralStatus||'Not configured',checkedAt:new Date().toISOString()})}catch(error){next(error)}});
   app.patch('/api/licensing',requireRoles('Administrator'),async(req:any,res,next)=>{try{
    await ensureSchema();const lic=await current();if(!lic)return res.status(404).json({error:'licence not found'});
    const type=req.body?.licenceType!==undefined?String(req.body.licenceType):lic.licenceType;const plan=req.body?.planName!==undefined?String(req.body.planName):lic.planName;const status=req.body?.status!==undefined?String(req.body.status):'Active';
