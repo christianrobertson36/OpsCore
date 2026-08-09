@@ -40,10 +40,24 @@ function proxyToApi(req, res) {
   req.pipe(proxyReq);
 }
 
-app.get('/health', (_req, res) => res.json({ ok: true, app: 'Core Ops Workflow Web', version: 'v10', apiProxy: apiUrl.origin, equipment: 'half-u-depth-aware', licensing: 'enabled', brand: 'core-ops-workflow' }));
+app.use((req, res, next) => {
+  if (req.path === '/' || req.path.endsWith('.html')) {
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
+  } else if (req.path.startsWith('/assets/')) {
+    res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+  }
+  next();
+});
+
+app.get('/health', (_req, res) => res.json({ ok: true, app: 'Core Ops Workflow Web', version: 'v10-fix3', apiProxy: apiUrl.origin, equipment: 'half-u-depth-aware', licensing: 'enabled', brand: 'core-ops-workflow', cachePolicy: 'fresh-shell' }));
 app.use('/api', proxyToApi);
 app.use('/auth', proxyToApi);
-app.use(express.static(dist));
-app.use((_req, res) => res.sendFile(path.join(dist, 'index.html')));
+app.use(express.static(dist, { etag: true, maxAge: 0 }));
+app.use((_req, res) => {
+  res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+  res.sendFile(path.join(dist, 'index.html'));
+});
 
-app.listen(port, '0.0.0.0', () => console.log(`Core Ops Workflow Web v10 listening on ${port}; API proxy ${apiUrl.origin}`));
+app.listen(port, '0.0.0.0', () => console.log(`Core Ops Workflow Web v10-fix3 listening on ${port}; API proxy ${apiUrl.origin}`));
