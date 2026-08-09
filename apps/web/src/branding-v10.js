@@ -70,21 +70,6 @@ function patchLogin(){
   if(small)small.textContent='Core Ops Workflow · Protected workspace';
 }
 
-function patchSidebar(){
-  const aside=document.querySelector('.app aside');
-  if(!aside)return;
-  const oldLogo=aside.querySelector('.logoMark');
-  if(!oldLogo)return;
-
-  const brandHost=oldLogo.parentElement;
-  if(!brandHost)return;
-
-  if(!brandHost.classList.contains('coreopsSidebarHost')){
-    brandHost.classList.add('coreopsSidebarHost');
-    brandHost.innerHTML=`<div class="coreopsSidebarBrand"><img src="${logoUrl}" alt="Core Ops Workflow"></div>`;
-  }
-}
-
 function replaceVisibleBranding(){
   document.title='Core Ops Workflow';
   const walker=document.createTreeWalker(document.body,NodeFilter.SHOW_TEXT);
@@ -111,7 +96,6 @@ function patch(){
   requestAnimationFrame(()=>{
     queued=false;
     patchLogin();
-    patchSidebar();
     replaceVisibleBranding();
   });
 }
