@@ -31,11 +31,11 @@ for(const method of ['get','post','patch','put','delete'] as const){
   if(handlers.length===0)return original.call(this,path);
   if(typeof path==='string'){
    if(path==='/health'&&method==='get'){
-    const wrapped=handlers.map((handler:any)=>(req:any,res:any,next:any)=>{const old=res.json.bind(res);res.json=(body:any)=>old({...body,version:'v9',licensing:'enabled',limits:'enforced',products:['OPSCORE','DCAM','SERVER_MANAGER']});return handler(req,res,next)});
+    const wrapped=handlers.map((handler:any)=>(req:any,res:any,next:any)=>{const old=res.json.bind(res);res.json=(body:any)=>old({...body,app:'Core Ops Workflow API',version:'v10',licensing:'management',limits:'enforced',installation:'tracked',products:['OPSCORE','DCAM','SERVER_MANAGER']});return handler(req,res,next)});
     return original.call(this,path,...wrapped);
    }
    if(path==='/api/platform'&&method==='get'){
-    const wrapped=handlers.map((handler:any)=>(req:any,res:any,next:any)=>{const old=res.json.bind(res);res.json=(body:any)=>old({...body,version:'v9',licensing:'enabled',limits:'enforced'});return handler(req,res,next)});
+    const wrapped=handlers.map((handler:any)=>(req:any,res:any,next:any)=>{const old=res.json.bind(res);res.json=(body:any)=>old({...body,brand:'Core Ops Workflow',version:'v10',licensing:'management',limits:'enforced'});return handler(req,res,next)});
     return original.call(this,path,...wrapped);
    }
    const middleware:any[]=[];
@@ -55,11 +55,11 @@ let registered=false;
  if(!registered){
   registerEquipmentV8(this,pool,requireRoles as any);
   licensing.registerRoutes(this,requireRoles as any);
-  this.use((error:any,_req:any,res:any,_next:any)=>{console.error('OpsCore v9 extension error',error);if(!res.headersSent)res.status(500).json({error:'internal server error'})});
-  licensing.ensureSchema().catch(error=>console.error('OpsCore v9 licensing initialisation failed',error));
+  this.use((error:any,_req:any,res:any,_next:any)=>{console.error('Core Ops Workflow v10 extension error',error);if(!res.headersSent)res.status(500).json({error:'internal server error'})});
+  licensing.ensureSchema().catch(error=>console.error('Core Ops Workflow v10 licensing initialisation failed',error));
   registered=true;
  }
- const last=args[args.length-1];if(typeof last==='function')args[args.length-1]=()=>{last();console.log('OpsCore API v9 licensing foundation enabled; entitlement and usage limits enforced')};
+ const last=args[args.length-1];if(typeof last==='function')args[args.length-1]=()=>{last();console.log('Core Ops Workflow API v10 licensing management enabled')};
  return originalListen.apply(this,args);
 };
 
