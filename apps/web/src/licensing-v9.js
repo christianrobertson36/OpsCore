@@ -1,3 +1,5 @@
+import './licensing-v9.css';
+
 const PRODUCT_GROUPS={
  OPSCORE:['Incidents','Requests','Problems','Changes','Knowledge'],
  SERVER_MANAGER:['Server Rooms','Racks','Equipment'],
@@ -7,13 +9,12 @@ let licence=null;let lastToken='';let installed=false;
 
 function token(){return localStorage.getItem('opscore_token')||''}
 async function api(path,options={}){const t=token();const r=await fetch(path,{...options,headers:{'Content-Type':'application/json',...(t?{Authorization:`Bearer ${t}`}:{}) ,...(options.headers||{})}});const body=await r.json().catch(()=>({}));if(!r.ok)throw new Error(body.error||`HTTP ${r.status}`);return body}
-function esc(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]))}
+function esc(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot',"'":'&#039;'}[c]))}
 function productName(p){return p==='SERVER_MANAGER'?'Server Manager':p==='OPSCORE'?'OpsCore':'DCAM'}
 function fmtDate(v){return v?new Date(v).toLocaleDateString('en-GB'):'—'}
 
 function ensureShell(){
  if(installed)return;
- const style=document.createElement('link');style.rel='stylesheet';style.href='/src/licensing-v9.css';document.head.appendChild(style);
  const root=document.createElement('div');root.id='opscoreLicensingV9';document.body.appendChild(root);installed=true;
  document.addEventListener('click',e=>{
   const btn=e.target.closest('aside nav button');if(!btn||!licence)return;const name=btn.textContent.trim().replace(/^🔒\s*/,'');
