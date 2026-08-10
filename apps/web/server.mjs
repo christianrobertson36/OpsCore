@@ -15,20 +15,11 @@ function proxyToApi(req, res) {
   const targetPath = req.originalUrl;
   const headers = { ...req.headers, host: apiUrl.host };
   delete headers['content-length'];
-
-  const proxyReq = proxyClient.request({
-    protocol: apiUrl.protocol,
-    hostname: apiUrl.hostname,
-    port: apiUrl.port || (apiUrl.protocol === 'https:' ? 443 : 80),
-    method: req.method,
-    path: targetPath,
-    headers
-  }, proxyRes => {
+  const proxyReq = proxyClient.request({protocol:apiUrl.protocol,hostname:apiUrl.hostname,port:apiUrl.port || (apiUrl.protocol === 'https:' ? 443 : 80),method:req.method,path:targetPath,headers}, proxyRes => {
     res.statusCode = proxyRes.statusCode || 502;
     for (const [name, value] of Object.entries(proxyRes.headers)) if (value !== undefined) res.setHeader(name, value);
     proxyRes.pipe(res);
   });
-
   proxyReq.on('error', error => {
     console.error('Core Ops Workflow API proxy error', error.message);
     if (!res.headersSent) res.status(502).json({ error: 'Core Ops Workflow API unavailable' }); else res.end();
@@ -45,10 +36,10 @@ app.use((req, res, next) => {
   next();
 });
 
-app.get('/health', (_req, res) => res.json({ ok:true, app:'Core Ops Workflow Web', version:'v23', apiProxy:apiUrl.origin, equipment:'half-u-depth-aware', licensing:'activation-and-sync', brand:'core-ops-workflow', loginRender:'static-css-atomic', enterpriseModules:'complete', reporting:'live-summary', dcamBridge:'live-overview-identity-mapping', i18n:['en-GB','ro-RO'] }));
+app.get('/health', (_req, res) => res.json({ok:true,app:'Core Ops Workflow Web',version:'v24',apiProxy:apiUrl.origin,equipment:'half-u-depth-aware',licensing:'activation-and-sync',brand:'core-ops-workflow',loginRender:'static-css-atomic',enterpriseModules:'complete',reporting:'live-summary',dcamBridge:'live-overview-identity-mapping-record-drill-in',i18n:['en-GB','ro-RO']}));
 app.use('/api', proxyToApi);
 app.use('/auth', proxyToApi);
 app.use(express.static(dist, { etag:true, maxAge:0 }));
 app.use((_req, res) => {res.setHeader('Cache-Control','no-store, no-cache, must-revalidate, proxy-revalidate');res.sendFile(path.join(dist,'index.html'))});
 
-app.listen(port,'0.0.0.0',()=>console.log(`Core Ops Workflow Web v23 listening on ${port}; API proxy ${apiUrl.origin}; atomic branded login; DCAM identity mapping; languages en-GB, ro-RO`));
+app.listen(port,'0.0.0.0',()=>console.log(`Core Ops Workflow Web v24 listening on ${port}; API proxy ${apiUrl.origin}; DCAM record drill-in; languages en-GB, ro-RO`));
