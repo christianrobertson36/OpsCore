@@ -101,10 +101,10 @@ function effective(lic){
  return {mode,status};
 }
 
-app.get('/health',async(_req,res)=>{try{await pool.query('SELECT 1');res.json({ok:true,app:'Core Ops Licensing Portal',version:'v5',database:'connected',gui:'admin-session'})}catch{res.status(503).json({ok:false,app:'Core Ops Licensing Portal',version:'v5',database:'unavailable'})}});
+app.get('/health',async(_req,res)=>{try{await pool.query('SELECT 1');res.json({ok:true,app:'Core Ops Licensing Portal',version:'v6',database:'connected',gui:'admin-session'})}catch{res.status(503).json({ok:false,app:'Core Ops Licensing Portal',version:'v6',database:'unavailable'})}});
 
-app.post('/api/admin/login',(req,res)=>{if(!adminPassword)return res.status(503).json({error:'licensing admin password not configured'});const password=String(req.body?.password||'');if(!secureEqual(password,adminPassword))return res.status(401).json({error:'invalid password'});const id=crypto.randomBytes(32).toString('hex');sessions.set(id,{createdAt:Date.now(),expiresAt:Date.now()+sessionTtlMs});res.setHeader('Set-Cookie',`coreops_licensing_session=${id}; HttpOnly; SameSite=Strict; Path=/; Max-Age=${Math.floor(sessionTtlMs/1000)}`);res.json({ok:true,expiresIn:Math.floor(sessionTtlMs/1000),version:'v5'})});
-app.get('/api/admin/session',(req,res)=>res.json({authenticated:Boolean(sessionFrom(req)),version:'v5'}));
+app.post('/api/admin/login',(req,res)=>{if(!adminPassword)return res.status(503).json({error:'licensing admin password not configured'});const password=String(req.body?.password||'');if(!secureEqual(password,adminPassword))return res.status(401).json({error:'invalid password'});const id=crypto.randomBytes(32).toString('hex');sessions.set(id,{createdAt:Date.now(),expiresAt:Date.now()+sessionTtlMs});res.setHeader('Set-Cookie',`coreops_licensing_session=${id}; HttpOnly; SameSite=Strict; Path=/; Max-Age=${Math.floor(sessionTtlMs/1000)}`);res.json({ok:true,expiresIn:Math.floor(sessionTtlMs/1000),version:'v6'})});
+app.get('/api/admin/session',(req,res)=>res.json({authenticated:Boolean(sessionFrom(req)),version:'v6'}));
 app.post('/api/admin/logout',(req,res)=>{const id=parseCookies(req).coreops_licensing_session;if(id)sessions.delete(id);res.setHeader('Set-Cookie','coreops_licensing_session=; HttpOnly; SameSite=Strict; Path=/; Max-Age=0');res.json({ok:true})});
 
 app.get('/api/admin/customers',requireAdmin,async(_req,res,next)=>{try{const r=await pool.query(`SELECT c.*,COUNT(DISTINCT l.id)::int AS licence_count,COUNT(DISTINCT i.id)::int AS installation_count FROM licensing_customers c LEFT JOIN central_licences l ON l.customer_id=c.id LEFT JOIN central_installations i ON i.licence_id=l.id GROUP BY c.id ORDER BY c.name`);res.json(r.rows)}catch(e){next(e)}});
@@ -124,4 +124,4 @@ app.use('/portal',express.static(path.join(__dirname,'public'),{etag:true,maxAge
 app.get('/',(_req,res)=>res.redirect('/portal/'));
 app.use((e,_req,res,_next)=>{console.error('Licensing portal error',e);if(!res.headersSent)res.status(500).json({error:'internal server error'})});
 
-ensureSchema().then(()=>app.listen(port,'0.0.0.0',()=>console.log(`Core Ops Licensing Portal v5 listening on ${port}`))).catch(e=>{console.error('Licensing portal startup failed',e);process.exit(1)});
+ensureSchema().then(()=>app.listen(port,'0.0.0.0',()=>console.log(`Core Ops Licensing Portal v6 listening on ${port}`))).catch(e=>{console.error('Licensing portal startup failed',e);process.exit(1)});
