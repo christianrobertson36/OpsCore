@@ -10,6 +10,8 @@ function requireRoles(...roles:Role[]){return(req:any,res:any,next:any)=>{if(!re
 const licensing=createLicensingV9(pool);
 const centralServerUrl=String(process.env.LICENSING_SERVER_URL||'').replace(/\/+$/,'');
 const centralClientSecret=String(process.env.LICENSING_CLIENT_SECRET||'');
+const API_VERSION='v16';
+const WEB_VERSION='v17';
 const PRODUCTS=['OPSCORE','DCAM','SERVER_MANAGER'] as const;
 
 function productForPath(path:string){
@@ -35,7 +37,14 @@ async function activateCentralLicence(key:string,actor:string){
  const response=await fetch(`${centralServerUrl}/api/client/check-in`,{
   method:'POST',
   headers:{'Content-Type':'application/json','X-CoreOps-Client-Secret':centralClientSecret},
-  body:JSON.stringify({licenceKey:key,installationId:lic.installationId,hostname:process.env.HOSTNAME||'',appVersion:'v15',usage:lic.usage||{},metadata:{product:'Core Ops Workflow',activation:'admin-ui'}})
+  body:JSON.stringify({
+   licenceKey:key,
+   installationId:lic.installationId,
+   hostname:process.env.HOSTNAME||'',
+   appVersion:API_VERSION,
+   usage:lic.usage||{},
+   metadata:{product:'Core Ops Workflow',activation:'admin-ui',webVersion:WEB_VERSION,apiVersion:API_VERSION}
+  })
  });
  const body:any=await response.json().catch(()=>({}));
  if(!response.ok)throw new Error(body.error||`Central licensing HTTP ${response.status}`);
@@ -56,11 +65,11 @@ for(const method of ['get','post','patch','put','delete'] as const){
   if(handlers.length===0)return original.call(this,path);
   if(typeof path==='string'){
    if(path==='/health'&&method==='get'){
-    const wrapped=handlers.map((handler:any)=>(req:any,res:any,next:any)=>{const old=res.json.bind(res);res.json=(body:any)=>old({...body,app:'Core Ops Workflow API',version:'v15',licensing:'activation-and-sync',limits:'enforced',installation:'tracked',products:['OPSCORE','DCAM','SERVER_MANAGER']});return handler(req,res,next)});
+    const wrapped=handlers.map((handler:any)=>(req:any,res:any,next:any)=>{const old=res.json.bind(res);res.json=(body:any)=>old({...body,app:'Core Ops Workflow API',version:API_VERSION,webVersion:WEB_VERSION,licensing:'activation-and-sync',limits:'enforced',installation:'tracked',products:['OPSCORE','DCAM','SERVER_MANAGER']});return handler(req,res,next)});
     return original.call(this,path,...wrapped);
    }
    if(path==='/api/platform'&&method==='get'){
-    const wrapped=handlers.map((handler:any)=>(req:any,res:any,next:any)=>{const old=res.json.bind(res);res.json=(body:any)=>old({...body,brand:'Core Ops Workflow',version:'v15',licensing:'activation-and-sync',limits:'enforced'});return handler(req,res,next)});
+    const wrapped=handlers.map((handler:any)=>(req:any,res:any,next:any)=>{const old=res.json.bind(res);res.json=(body:any)=>old({...body,brand:'Core Ops Workflow',version:API_VERSION,webVersion:WEB_VERSION,licensing:'activation-and-sync',limits:'enforced'});return handler(req,res,next)});
     return original.call(this,path,...wrapped);
    }
    const middleware:any[]=[];
@@ -80,13 +89,13 @@ let registered=false;
  if(!registered){
   registerEquipmentV8(this,pool,requireRoles as any);
   licensing.registerRoutes(this,requireRoles as any);
-  this.get('/api/licensing/activation',requireRoles('Administrator'),async(_req:any,res:any,next:any)=>{try{const lic:any=await licensing.current();if(!lic)return res.status(404).json({error:'licence not found'});const centralKey=String(lic.licenceKey||'').startsWith('COW-')?String(lic.licenceKey):'';res.json({serverConfigured:Boolean(centralServerUrl&&centralClientSecret),centralServerUrl:centralServerUrl||null,activated:Boolean(centralKey),licenceKeyMasked:centralKey?`${centralKey.slice(0,8)}••••${centralKey.slice(-4)}`:null,centralStatus:lic.centralStatus||'Not configured',lastCentralCheckAt:lic.lastCentralCheckAt||null,version:'v15'})}catch(error){next(error)}});
-  this.post('/api/licensing/activate',requireRoles('Administrator'),async(req:any,res:any)=>{const actor=req.authUser?.email||'Administrator';try{const current:any=await licensing.current();const supplied=String(req.body?.licenceKey||'').trim().toUpperCase();const stored=String(current?.licenceKey||'').startsWith('COW-')?String(current.licenceKey):'';const key=supplied||stored;if(!/^COW-[A-Z0-9-]{8,}$/i.test(key))return res.status(400).json({error:'enter a valid COW licence key'});const result=await activateCentralLicence(key,actor);res.json({ok:true,centralStatus:'Connected',checkedAt:new Date().toISOString(),licenceKeyMasked:`${key.slice(0,8)}••••${key.slice(-4)}`,customer:result.customer,licence:result.licence})}catch(error:any){const current:any=await licensing.current().catch(()=>null);if(current)await pool.query(`UPDATE organisations SET licensing_mode='Central',central_server_url=$1,last_central_check_at=NOW(),central_status='Unavailable',updated_at=NOW() WHERE id=$2`,[centralServerUrl||null,current.organisationId]).catch(()=>{});res.status(502).json({error:'central licence activation failed',detail:String(error?.message||error),cachedLicenceRetained:true})}});
-  this.use((error:any,_req:any,res:any,_next:any)=>{console.error('Core Ops Workflow v15 extension error',error);if(!res.headersSent)res.status(500).json({error:'internal server error'})});
-  licensing.ensureSchema().catch(error=>console.error('Core Ops Workflow v15 licensing initialisation failed',error));
+  this.get('/api/licensing/activation',requireRoles('Administrator'),async(_req:any,res:any,next:any)=>{try{const lic:any=await licensing.current();if(!lic)return res.status(404).json({error:'licence not found'});const centralKey=String(lic.licenceKey||'').startsWith('COW-')?String(lic.licenceKey):'';res.json({serverConfigured:Boolean(centralServerUrl&&centralClientSecret),centralServerUrl:centralServerUrl||null,activated:Boolean(centralKey),licenceKeyMasked:centralKey?`${centralKey.slice(0,8)}••••${centralKey.slice(-4)}`:null,centralStatus:lic.centralStatus||'Not configured',lastCentralCheckAt:lic.lastCentralCheckAt||null,version:API_VERSION,webVersion:WEB_VERSION})}catch(error){next(error)}});
+  this.post('/api/licensing/activate',requireRoles('Administrator'),async(req:any,res:any)=>{const actor=req.authUser?.email||'Administrator';try{const current:any=await licensing.current();const supplied=String(req.body?.licenceKey||'').trim().toUpperCase();const stored=String(current?.licenceKey||'').startsWith('COW-')?String(current.licenceKey):'';const key=supplied||stored;if(!/^COW-[A-Z0-9-]{8,}$/i.test(key))return res.status(400).json({error:'enter a valid COW licence key'});const result=await activateCentralLicence(key,actor);res.json({ok:true,centralStatus:'Connected',checkedAt:new Date().toISOString(),licenceKeyMasked:`${key.slice(0,8)}••••${key.slice(-4)}`,customer:result.customer,licence:result.licence,versions:{web:WEB_VERSION,api:API_VERSION}})}catch(error:any){const current:any=await licensing.current().catch(()=>null);if(current)await pool.query(`UPDATE organisations SET licensing_mode='Central',central_server_url=$1,last_central_check_at=NOW(),central_status='Unavailable',updated_at=NOW() WHERE id=$2`,[centralServerUrl||null,current.organisationId]).catch(()=>{});res.status(502).json({error:'central licence activation failed',detail:String(error?.message||error),cachedLicenceRetained:true})}});
+  this.use((error:any,_req:any,res:any,_next:any)=>{console.error('Core Ops Workflow v16 extension error',error);if(!res.headersSent)res.status(500).json({error:'internal server error'})});
+  licensing.ensureSchema().catch(error=>console.error('Core Ops Workflow v16 licensing initialisation failed',error));
   registered=true;
  }
- const last=args[args.length-1];if(typeof last==='function')args[args.length-1]=()=>{last();console.log('Core Ops Workflow API v15 central activation and sync enabled')};
+ const last=args[args.length-1];if(typeof last==='function')args[args.length-1]=()=>{last();console.log('Core Ops Workflow API v16 central activation and sync enabled')};
  return originalListen.apply(this,args);
 };
 
