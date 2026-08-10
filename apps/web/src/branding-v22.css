@@ -1,0 +1,23 @@
+@import './branding-v14.css';
+
+/* v22: the login presentation is static HTML and CSS-driven. No delayed JS
+   creation/toggle is involved, so the hero and form appear as one render. */
+#coreopsLoginPresentation{display:none!important}
+html:has(.authScreen form.authCard) #coreopsLoginPresentation{display:flex!important;position:fixed;z-index:3;left:0;top:0;bottom:0;width:56%;pointer-events:none;box-sizing:border-box;padding:6vh 5.8vw 5vh;align-items:center;background-image:linear-gradient(rgba(71,137,200,.045) 1px,transparent 1px),linear-gradient(90deg,rgba(71,137,200,.045) 1px,transparent 1px);background-size:38px 38px;color:#eef7ff}
+.v22HeroLogo{display:block;width:min(290px,65%);height:74px;margin-bottom:7vh;background-image:url('./core-ops-logo.svg');background-repeat:no-repeat;background-position:left center;background-size:contain}
+
+/* Prevent the old JS-controlled class from affecting login visibility. */
+.coreopsV14.coreopsLoginActive #coreopsLoginPresentation{display:none!important}
+html:has(.authScreen form.authCard).coreopsV14.coreopsLoginActive #coreopsLoginPresentation{display:flex!important}
+
+/* Session-check card stays centred and never leaves a half-rendered login. */
+html:not(:has(.authScreen form.authCard)) .authScreen{grid-template-columns:1fr!important;place-items:center!important}
+html:not(:has(.authScreen form.authCard)) .authScreen .authCard{grid-column:1!important}
+
+.coreopsV14 .authCard small:after{content:'Core Ops Workflow v22 · Protected workspace'!important}
+.coreopsV14 .asideFooter span:after{content:'Core Ops Workflow v22'!important}
+.coreopsV14 .headActions .pill{font-size:0!important}
+.coreopsV14 .headActions .pill:after{content:'v22';font-size:11px!important}
+
+@media(max-width:1180px){html:has(.authScreen form.authCard) #coreopsLoginPresentation{width:52%;padding-left:4vw;padding-right:3vw}}
+@media(max-width:900px){html:has(.authScreen form.authCard) #coreopsLoginPresentation{display:none!important}}
