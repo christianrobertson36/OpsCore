@@ -6,6 +6,7 @@
 <meta name="theme-color" content="#061528">
 <title>Core Ops Licensing Portal</title>
 <link rel="stylesheet" href="/portal/app.css">
+<link rel="stylesheet" href="/portal/enhancements-v6.css">
 </head>
 <body>
 <div id="login" class="loginScreen">
@@ -16,7 +17,7 @@
     <p>Manage customers, trials, paid licences, product entitlements, installations and check-ins from one secure licensing workspace.</p>
     <div class="heroStats"><div><b>Customer control</b><span>One licence record per deployment</span></div><div><b>Product aware</b><span>Core Ops · DCAM · Server Manager</span></div><div><b>Installation visibility</b><span>Last seen, version and usage</span></div></div>
   </section>
-  <section class="loginPanel"><form id="loginForm" class="loginCard"><div class="miniBrand"><div class="brandMark small">CO</div><div><b>Core Ops</b><span>Licensing Portal</span></div></div><div class="secure">ADMINISTRATOR ACCESS</div><h2>Sign in</h2><p>Enter the licensing administrator password.</p><label>Password<input id="loginPassword" type="password" autocomplete="current-password" required autofocus></label><div id="loginError" class="error"></div><button class="primary wide">Sign in</button><small>Core Ops Licensing Portal v5</small></form></section>
+  <section class="loginPanel"><form id="loginForm" class="loginCard"><div class="miniBrand"><div class="brandMark small">CO</div><div><b>Core Ops</b><span>Licensing Portal</span></div></div><div class="secure">ADMINISTRATOR ACCESS</div><h2>Sign in</h2><p>Enter the licensing administrator password.</p><label>Password<input id="loginPassword" type="password" autocomplete="current-password" required autofocus></label><div id="loginError" class="error"></div><button class="primary wide">Sign in</button><small>Core Ops Licensing Portal v6</small></form></section>
 </div>
 
 <div id="app" class="appShell hidden">
@@ -29,7 +30,7 @@
       <button data-page="installations"><i>▣</i><span>Installations</span></button>
       <button data-page="audit"><i>≡</i><span>Audit</span></button>
     </nav>
-    <div class="sideFooter"><span>Central licensing service</span><b>v5</b><button id="logoutBtn">Sign out</button></div>
+    <div class="sideFooter"><span>Central licensing service</span><b>v6</b><button id="logoutBtn">Sign out</button></div>
   </aside>
   <main class="workspace">
     <header class="topbar"><div><div id="crumb" class="crumb">Licensing / Dashboard</div><h1 id="pageTitle">Licensing Dashboard</h1><p id="pageSubtitle">Customer, entitlement and installation control.</p></div><div class="topActions"><div class="searchBox"><span>⌕</span><input id="searchInput" placeholder="Search customers, keys, installations…"></div><button id="refreshBtn" class="secondary">Refresh</button></div></header>
@@ -39,5 +40,6 @@
 <div id="modalRoot"></div>
 <div id="toastRoot"></div>
 <script defer src="/portal/app.js"></script>
+<script defer src="/portal/enhancements-v6.js"></script>
 </body>
 </html>
