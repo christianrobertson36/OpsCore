@@ -12,7 +12,7 @@ const adminToken=String(process.env.LICENSING_ADMIN_TOKEN||'');
 const adminPassword=String(process.env.LICENSING_ADMIN_PASSWORD||adminToken||'');
 const clientSecret=String(process.env.LICENSING_CLIENT_SECRET||'');
 const sessionTtlMs=8*60*60*1000;
-const sessions=new Map();
+const sessionSigningKey=adminToken||clientSecret||adminPassword;
 const __dirname=path.dirname(fileURLToPath(import.meta.url));
 
 app.use(express.json({limit:'256kb'}));
@@ -20,7 +20,8 @@ app.use(express.json({limit:'256kb'}));
 function licenceKey(){const raw=crypto.randomBytes(10).toString('hex').toUpperCase();return `COW-${raw.slice(0,4)}-${raw.slice(4,8)}-${raw.slice(8,12)}-${raw.slice(12,16)}-${raw.slice(16,20)}`}
 function secureEqual(a,b){const aa=Buffer.from(String(a));const bb=Buffer.from(String(b));return aa.length===bb.length&&crypto.timingSafeEqual(aa,bb)}
 function parseCookies(req){return Object.fromEntries(String(req.headers.cookie||'').split(';').map(v=>v.trim()).filter(Boolean).map(v=>{const p=v.indexOf('=');return p<0?[v,'']:[v.slice(0,p),decodeURIComponent(v.slice(p+1))]}))}
-function sessionFrom(req){const id=parseCookies(req).coreops_licensing_session;if(!id)return null;const s=sessions.get(id);if(!s||s.expiresAt<Date.now()){if(id)sessions.delete(id);return null}return s}
+function signSession(payload){const body=Buffer.from(JSON.stringify(payload)).toString('base64url');const sig=crypto.createHmac('sha256',sessionSigningKey).update(body).digest('base64url');return `${body}.${sig}`}
+function sessionFrom(req){if(!sessionSigningKey)return null;const token=parseCookies(req).coreops_licensing_session;if(!token)return null;const dot=token.lastIndexOf('.');if(dot<1)return null;const body=token.slice(0,dot),sig=token.slice(dot+1);const expected=crypto.createHmac('sha256',sessionSigningKey).update(body).digest('base64url');if(!secureEqual(sig,expected))return null;try{const s=JSON.parse(Buffer.from(body,'base64url').toString('utf8'));if(!s||Number(s.expiresAt)<Date.now())return null;return s}catch{return null}}
 function requireAdmin(req,res,next){const bearer=String(req.headers.authorization||'').replace(/^Bearer\s+/i,'');if(adminToken&&bearer&&secureEqual(bearer,adminToken))return next();if(sessionFrom(req))return next();return res.status(401).json({error:'unauthorised'})}
 function requireClient(req,res,next){if(!clientSecret)return res.status(503).json({error:'licensing client secret not configured'});if(!secureEqual(String(req.headers['x-coreops-client-secret']||''),clientSecret))return res.status(401).json({error:'unauthorised installation'});next()}
 
@@ -101,11 +102,11 @@ function effective(lic){
  return {mode,status};
 }
 
-app.get('/health',async(_req,res)=>{try{await pool.query('SELECT 1');res.json({ok:true,app:'Core Ops Licensing Portal',version:'v6',database:'connected',gui:'admin-session'})}catch{res.status(503).json({ok:false,app:'Core Ops Licensing Portal',version:'v6',database:'unavailable'})}});
+app.get('/health',async(_req,res)=>{try{await pool.query('SELECT 1');res.json({ok:true,app:'Core Ops Licensing Portal',version:'v7',database:'connected',gui:'signed-persistent-session'})}catch{res.status(503).json({ok:false,app:'Core Ops Licensing Portal',version:'v7',database:'unavailable'})}});
 
-app.post('/api/admin/login',(req,res)=>{if(!adminPassword)return res.status(503).json({error:'licensing admin password not configured'});const password=String(req.body?.password||'');if(!secureEqual(password,adminPassword))return res.status(401).json({error:'invalid password'});const id=crypto.randomBytes(32).toString('hex');sessions.set(id,{createdAt:Date.now(),expiresAt:Date.now()+sessionTtlMs});res.setHeader('Set-Cookie',`coreops_licensing_session=${id}; HttpOnly; SameSite=Strict; Path=/; Max-Age=${Math.floor(sessionTtlMs/1000)}`);res.json({ok:true,expiresIn:Math.floor(sessionTtlMs/1000),version:'v6'})});
-app.get('/api/admin/session',(req,res)=>res.json({authenticated:Boolean(sessionFrom(req)),version:'v6'}));
-app.post('/api/admin/logout',(req,res)=>{const id=parseCookies(req).coreops_licensing_session;if(id)sessions.delete(id);res.setHeader('Set-Cookie','coreops_licensing_session=; HttpOnly; SameSite=Strict; Path=/; Max-Age=0');res.json({ok:true})});
+app.post('/api/admin/login',(req,res)=>{if(!adminPassword||!sessionSigningKey)return res.status(503).json({error:'licensing admin session not configured'});const password=String(req.body?.password||'');if(!secureEqual(password,adminPassword))return res.status(401).json({error:'invalid password'});const now=Date.now();const token=signSession({role:'licensing-admin',createdAt:now,expiresAt:now+sessionTtlMs,nonce:crypto.randomBytes(12).toString('hex')});res.setHeader('Set-Cookie',`coreops_licensing_session=${encodeURIComponent(token)}; HttpOnly; SameSite=Strict; Path=/; Max-Age=${Math.floor(sessionTtlMs/1000)}`);res.json({ok:true,expiresIn:Math.floor(sessionTtlMs/1000),version:'v7',persistent:true})});
+app.get('/api/admin/session',(req,res)=>{const s=sessionFrom(req);res.json({authenticated:Boolean(s),version:'v7',persistent:true,expiresAt:s?.expiresAt||null})});
+app.post('/api/admin/logout',(_req,res)=>{res.setHeader('Set-Cookie','coreops_licensing_session=; HttpOnly; SameSite=Strict; Path=/; Max-Age=0');res.json({ok:true})});
 
 app.get('/api/admin/customers',requireAdmin,async(_req,res,next)=>{try{const r=await pool.query(`SELECT c.*,COUNT(DISTINCT l.id)::int AS licence_count,COUNT(DISTINCT i.id)::int AS installation_count FROM licensing_customers c LEFT JOIN central_licences l ON l.customer_id=c.id LEFT JOIN central_installations i ON i.licence_id=l.id GROUP BY c.id ORDER BY c.name`);res.json(r.rows)}catch(e){next(e)}});
 app.post('/api/admin/customers',requireAdmin,async(req,res,next)=>{try{const {customerCode,name,contactEmail='',notes=''}=req.body||{};if(!customerCode||!name)return res.status(400).json({error:'customerCode and name required'});const r=await pool.query(`INSERT INTO licensing_customers(customer_code,name,contact_email,notes) VALUES($1,$2,$3,$4) RETURNING *`,[String(customerCode).trim(),String(name).trim(),String(contactEmail).trim(),String(notes)]);res.status(201).json(r.rows[0])}catch(e){next(e)}});
@@ -124,4 +125,4 @@ app.use('/portal',express.static(path.join(__dirname,'public'),{etag:true,maxAge
 app.get('/',(_req,res)=>res.redirect('/portal/'));
 app.use((e,_req,res,_next)=>{console.error('Licensing portal error',e);if(!res.headersSent)res.status(500).json({error:'internal server error'})});
 
-ensureSchema().then(()=>app.listen(port,'0.0.0.0',()=>console.log(`Core Ops Licensing Portal v6 listening on ${port}`))).catch(e=>{console.error('Licensing portal startup failed',e);process.exit(1)});
+ensureSchema().then(()=>app.listen(port,'0.0.0.0',()=>console.log(`Core Ops Licensing Portal v7 listening on ${port}`))).catch(e=>{console.error('Licensing portal startup failed',e);process.exit(1)});
