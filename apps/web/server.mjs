@@ -25,18 +25,14 @@ function proxyToApi(req, res) {
     headers
   }, proxyRes => {
     res.statusCode = proxyRes.statusCode || 502;
-    for (const [name, value] of Object.entries(proxyRes.headers)) {
-      if (value !== undefined) res.setHeader(name, value);
-    }
+    for (const [name, value] of Object.entries(proxyRes.headers)) if (value !== undefined) res.setHeader(name, value);
     proxyRes.pipe(res);
   });
 
   proxyReq.on('error', error => {
     console.error('Core Ops Workflow API proxy error', error.message);
-    if (!res.headersSent) res.status(502).json({ error: 'Core Ops Workflow API unavailable' });
-    else res.end();
+    if (!res.headersSent) res.status(502).json({ error: 'Core Ops Workflow API unavailable' }); else res.end();
   });
-
   req.pipe(proxyReq);
 }
 
@@ -45,19 +41,14 @@ app.use((req, res, next) => {
     res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
     res.setHeader('Pragma', 'no-cache');
     res.setHeader('Expires', '0');
-  } else if (req.path.startsWith('/assets/')) {
-    res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
-  }
+  } else if (req.path.startsWith('/assets/')) res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
   next();
 });
 
-app.get('/health', (_req, res) => res.json({ ok: true, app: 'Core Ops Workflow Web', version: 'v18', apiProxy: apiUrl.origin, equipment: 'half-u-depth-aware', licensing: 'activation-and-sync', brand: 'core-ops-workflow', cachePolicy: 'fresh-shell', paint: 'native-brand', i18n: ['en-GB','ro-RO'] }));
+app.get('/health', (_req, res) => res.json({ ok:true, app:'Core Ops Workflow Web', version:'v19', apiProxy:apiUrl.origin, equipment:'half-u-depth-aware', licensing:'activation-and-sync', brand:'core-ops-workflow', enterpriseModules:'complete', reporting:'live-summary', i18n:['en-GB','ro-RO'] }));
 app.use('/api', proxyToApi);
 app.use('/auth', proxyToApi);
-app.use(express.static(dist, { etag: true, maxAge: 0 }));
-app.use((_req, res) => {
-  res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
-  res.sendFile(path.join(dist, 'index.html'));
-});
+app.use(express.static(dist, { etag:true, maxAge:0 }));
+app.use((_req, res) => {res.setHeader('Cache-Control','no-store, no-cache, must-revalidate, proxy-revalidate');res.sendFile(path.join(dist,'index.html'))});
 
-app.listen(port, '0.0.0.0', () => console.log(`Core Ops Workflow Web v18 listening on ${port}; API proxy ${apiUrl.origin}; languages en-GB, ro-RO`));
+app.listen(port,'0.0.0.0',()=>console.log(`Core Ops Workflow Web v19 listening on ${port}; API proxy ${apiUrl.origin}; enterprise modules complete; languages en-GB, ro-RO`));
