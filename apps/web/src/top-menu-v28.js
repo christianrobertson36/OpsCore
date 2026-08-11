@@ -1,4 +1,6 @@
 const labels={
+  'Operations Hub':['Operations','Operațiuni'],
+  'Service Catalogue':['Catalogue','Catalog'],
   'My Work':['My Work','Activitatea mea'],
   'Dashboard':['Dashboard','Panou de control'],
   'Incidents':['Incidents','Incidente'],
@@ -24,6 +26,8 @@ const labels={
 const keys=Object.keys(labels);
 const isRo=()=>((window.CoreOpsI18n?.getLanguage?.()||localStorage.getItem('coreops_language'))==='ro-RO');
 function sideButton(key){
+  if(key==='Operations Hub')return {click:()=>window.CoreOpsPhase4?.hub?.(),classList:{contains:()=>document.querySelector('.app main')?.classList.contains('phase4Active')}};
+  if(key==='Service Catalogue')return {click:()=>window.CoreOpsPhase4?.catalogue?.(),classList:{contains:()=>false}};
   if(key==='My Work')return {click:()=>window.CoreOpsPhase3?.openMyWork?.(),classList:{contains:()=>document.querySelector('.app main')?.classList.contains('phase3Active')}};
   if(key==='DCAM Overview')return document.querySelector('[data-dcam-overview]');
   if(key==='Monitoring')return document.querySelector('[data-monitoring]');
