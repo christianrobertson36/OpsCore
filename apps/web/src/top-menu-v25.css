@@ -1,0 +1,15 @@
+@import './dcam-drillin-v24.css';
+
+#coreopsTopMenu{position:fixed;z-index:80;left:0;right:0;top:0;height:50px;display:flex;align-items:center;background:#071426;border-bottom:1px solid rgba(116,171,220,.2);box-shadow:0 6px 18px rgba(3,12,24,.18);color:#fff}
+.topMenuBrand{height:50px;width:250px;flex:0 0 250px;display:flex;align-items:baseline;gap:6px;padding:0 18px;border-right:1px solid rgba(255,255,255,.08)}
+.topMenuBrand b{font-size:15px;letter-spacing:-.2px}.topMenuBrand span{font-size:9px;text-transform:uppercase;letter-spacing:.12em;color:#7189a2}
+.topMenuItems{display:flex;align-items:stretch;gap:2px;height:100%;overflow-x:auto;overflow-y:hidden;padding:5px 10px;scrollbar-width:thin;white-space:nowrap}
+.topMenuItems button{appearance:none;border:0;background:transparent;color:#b8c7d8;border-radius:8px;padding:0 10px;font:inherit;font-size:10px;font-weight:750;cursor:pointer;white-space:nowrap;transition:.15s}
+.topMenuItems button:hover{background:#142942;color:#fff}.topMenuItems button.topActive{background:#174b80;color:#fff}
+html.coreopsTopMenuActive .app{padding-top:50px}
+html.coreopsTopMenuActive .app aside{top:50px;height:calc(100vh - 50px)}
+html.coreopsTopMenuActive .app main{padding-top:28px}
+html:has(.authScreen) #coreopsTopMenu{display:none!important}
+html:has(.authScreen) .app{padding-top:0!important}
+@media(max-width:1180px){.topMenuBrand{width:225px;flex-basis:225px}.topMenuItems button{padding:0 8px;font-size:9px}}
+@media(max-width:900px){#coreopsTopMenu{height:46px}.topMenuBrand{display:none}.topMenuItems{width:100%}html.coreopsTopMenuActive .app{padding-top:46px}}
