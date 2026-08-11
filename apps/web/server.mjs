@@ -36,10 +36,10 @@ app.use((req, res, next) => {
   next();
 });
 
-app.get('/health', (_req, res) => res.json({ok:true,app:'Core Ops Workflow Web',version:'v24',apiProxy:apiUrl.origin,equipment:'half-u-depth-aware',licensing:'activation-and-sync',brand:'core-ops-workflow',loginRender:'static-css-atomic',enterpriseModules:'complete',reporting:'live-summary',dcamBridge:'live-overview-identity-mapping-record-drill-in',i18n:['en-GB','ro-RO']}));
+app.get('/health', (_req, res) => res.json({ok:true,app:'Core Ops Workflow Web',version:'v25',apiProxy:apiUrl.origin,equipment:'half-u-depth-aware',licensing:'activation-and-sync',brand:'core-ops-workflow',loginRender:'static-css-atomic',topNavigation:'full-static-menu',enterpriseModules:'complete',reporting:'live-summary',dcamBridge:'live-overview-identity-mapping-record-drill-in',i18n:['en-GB','ro-RO']}));
 app.use('/api', proxyToApi);
 app.use('/auth', proxyToApi);
 app.use(express.static(dist, { etag:true, maxAge:0 }));
 app.use((_req, res) => {res.setHeader('Cache-Control','no-store, no-cache, must-revalidate, proxy-revalidate');res.sendFile(path.join(dist,'index.html'))});
 
-app.listen(port,'0.0.0.0',()=>console.log(`Core Ops Workflow Web v24 listening on ${port}; API proxy ${apiUrl.origin}; DCAM record drill-in; languages en-GB, ro-RO`));
+app.listen(port,'0.0.0.0',()=>console.log(`Core Ops Workflow Web v25 listening on ${port}; API proxy ${apiUrl.origin}; full static top menu; DCAM record drill-in; languages en-GB, ro-RO`));
