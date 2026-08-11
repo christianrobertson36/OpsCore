@@ -2,8 +2,8 @@ FROM node:22-alpine AS build
 
 WORKDIR /app
 
-COPY apps/web/package.json ./package.json
-RUN npm install
+COPY apps/web/package.json apps/web/package-lock.json ./
+RUN npm ci
 
 COPY apps/web/index.html ./index.html
 COPY apps/web/src ./src
@@ -15,12 +15,15 @@ FROM node:22-alpine
 WORKDIR /app
 ENV NODE_ENV=production
 
-COPY apps/web/package.json ./package.json
-RUN npm install --omit=dev
+COPY apps/web/package.json apps/web/package-lock.json ./
+RUN npm ci --omit=dev
 
 COPY apps/web/server.mjs ./server.mjs
 COPY --from=build /app/dist ./dist
 
 EXPOSE 3000
+
+HEALTHCHECK --interval=30s --timeout=5s --start-period=15s --retries=3 \
+  CMD wget -qO- http://127.0.0.1:3000/health || exit 1
 
 CMD ["npm","start"]

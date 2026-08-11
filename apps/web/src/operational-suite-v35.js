@@ -1,0 +1,6 @@
+// Consolidated entry point for connected operational capabilities.
+// Import order is intentional: later phases enhance workspaces created by earlier phases.
+import './phase2-v30.js';
+import './phase3-v32.js';
+import './phase4-v33.js';
+import './phase5-v34.js';
