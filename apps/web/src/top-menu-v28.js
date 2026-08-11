@@ -1,4 +1,5 @@
 const labels={
+  'Governance':['Governance','Guvernanță'],
   'Operations Hub':['Operations','Operațiuni'],
   'Service Catalogue':['Catalogue','Catalog'],
   'My Work':['My Work','Activitatea mea'],
@@ -26,6 +27,7 @@ const labels={
 const keys=Object.keys(labels);
 const isRo=()=>((window.CoreOpsI18n?.getLanguage?.()||localStorage.getItem('coreops_language'))==='ro-RO');
 function sideButton(key){
+  if(key==='Governance')return {click:()=>window.CoreOpsPhase5?.open?.(),classList:{contains:()=>document.querySelector('.app main')?.classList.contains('phase5Active')}};
   if(key==='Operations Hub')return {click:()=>window.CoreOpsPhase4?.hub?.(),classList:{contains:()=>document.querySelector('.app main')?.classList.contains('phase4Active')}};
   if(key==='Service Catalogue')return {click:()=>window.CoreOpsPhase4?.catalogue?.(),classList:{contains:()=>false}};
   if(key==='My Work')return {click:()=>window.CoreOpsPhase3?.openMyWork?.(),classList:{contains:()=>document.querySelector('.app main')?.classList.contains('phase3Active')}};
