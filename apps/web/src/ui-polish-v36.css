@@ -86,3 +86,36 @@
   #coreopsTopMenu .topMenuItems button { min-width: 58px !important; padding-inline: 6px !important; }
   #coreopsTopMenu .topMenuBrand { width: 178px !important; flex-basis: 178px !important; }
 }
+
+/* Stable collapsible navigation behaviour, independent of legacy root classes. */
+.app aside nav button.compactHidden {
+  display: none !important;
+}
+
+.app aside nav h4 {
+  position: relative;
+  cursor: pointer;
+  padding: 10px 30px 10px 11px;
+  margin: 8px 2px 2px;
+  border-radius: 9px;
+  user-select: none;
+}
+
+.app aside nav h4::after {
+  content: '›';
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 18px;
+  transition: transform .16s ease;
+}
+
+.app aside nav h4.menuOpen {
+  color: #fff;
+  background: rgba(255,255,255,.055);
+}
+
+.app aside nav h4.menuOpen::after {
+  transform: translateY(-50%) rotate(90deg);
+}

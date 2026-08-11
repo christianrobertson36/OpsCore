@@ -1,4 +1,5 @@
 const labels={
+  'Service Portfolio':['Services','Servicii'],
   'Governance':['Governance','Guvernanță'],
   'Operations Hub':['Operations','Operațiuni'],
   'Service Catalogue':['Catalogue','Catalog'],
@@ -24,9 +25,10 @@ const labels={
   'Administration':['Admin','Administrare'],
   'Licensing':['Licensing','Licențiere']
 };
-const keys=['Operations Hub','My Work','Dashboard','Incidents','Requests','Service Catalogue','Assets / CMDB','Monitoring','Governance','Reporting','Administration'];
+const keys=['Operations Hub','My Work','Service Portfolio','Dashboard','Incidents','Requests','Service Catalogue','Assets / CMDB','Monitoring','Governance','Reporting','Administration'];
 const isRo=()=>((window.CoreOpsI18n?.getLanguage?.()||localStorage.getItem('coreops_language'))==='ro-RO');
 function sideButton(key){
+  if(key==='Service Portfolio')return {click:()=>window.CoreOpsPhase7?.open?.(),classList:{contains:()=>document.querySelector('.app main')?.classList.contains('phase7Active')}};
   if(key==='Governance')return {click:()=>window.CoreOpsPhase5?.open?.(),classList:{contains:()=>document.querySelector('.app main')?.classList.contains('phase5Active')}};
   if(key==='Operations Hub')return {click:()=>window.CoreOpsPhase4?.hub?.(),classList:{contains:()=>document.querySelector('.app main')?.classList.contains('phase4Active')}};
   if(key==='Service Catalogue')return {click:()=>window.CoreOpsPhase4?.catalogue?.(),classList:{contains:()=>false}};
