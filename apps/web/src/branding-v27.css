@@ -1,0 +1,5 @@
+@import './branding-v26.css';
+.coreopsV14 .authCard small:after{content:'Core Ops Workflow v27 · Protected workspace'!important}
+.coreopsV14 .asideFooter span:after{content:'Core Ops Workflow v27'!important}
+.coreopsV14 .headActions .pill{font-size:0!important}
+.coreopsV14 .headActions .pill:after{content:'v27';font-size:11px!important}
