@@ -1,4 +1,5 @@
 const labels={
+  'My Work':['My Work','Activitatea mea'],
   'Dashboard':['Dashboard','Panou de control'],
   'Incidents':['Incidents','Incidente'],
   'Requests':['Requests','Solicitări'],
@@ -23,6 +24,7 @@ const labels={
 const keys=Object.keys(labels);
 const isRo=()=>((window.CoreOpsI18n?.getLanguage?.()||localStorage.getItem('coreops_language'))==='ro-RO');
 function sideButton(key){
+  if(key==='My Work')return {click:()=>window.CoreOpsPhase3?.openMyWork?.(),classList:{contains:()=>document.querySelector('.app main')?.classList.contains('phase3Active')}};
   if(key==='DCAM Overview')return document.querySelector('[data-dcam-overview]');
   if(key==='Monitoring')return document.querySelector('[data-monitoring]');
   if(key==='Notifications')return document.querySelector('[data-notifications]');
