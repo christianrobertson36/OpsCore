@@ -1,0 +1,32 @@
+.p2Back.p2Fullscreen {
+  padding: 0;
+  background: #fff;
+}
+
+.p2Fullscreen .p2Modal {
+  width: 100%;
+  height: 100%;
+  max-height: none;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.p2Fullscreen .p2Modal > header {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: #fff;
+}
+
+.p2Fullscreen .p2Body {
+  width: 100%;
+  max-width: 1440px;
+  margin: 0 auto;
+  padding: 36px;
+}
+
+@media (max-width: 760px) {
+  .p2Fullscreen .p2Body {
+    padding: 18px;
+  }
+}

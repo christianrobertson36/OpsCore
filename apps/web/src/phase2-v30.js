@@ -10,9 +10,9 @@ const t=(en,rr)=>ro()?rr:en;
 const esc=value=>String(value??'').replace(/[&<>"']/g,char=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
 const fmt=value=>value?new Date(value).toLocaleString(ro()?'ro-RO':'en-GB'):'—';
 
-function modal(title,body){
+function modal(title,body,fullscreen=false){
   const back=document.createElement('div');
-  back.className='p2Back';
+  back.className=`p2Back${fullscreen?' p2Fullscreen':''}`;
   back.innerHTML=`<section class="p2Modal"><header><h2>${esc(title)}</h2><button aria-label="${t('Close','Închide')}">×</button></header><div class="p2Body">${body}</div></section>`;
   document.body.append(back);
   const close=()=>back.remove();
@@ -33,7 +33,7 @@ async function openWorkflow(type,id){
   const record=data[type.toLowerCase()];
   const statuses=type==='Incident'?['Open','Assigned','In Progress','Pending','Resolved','Closed']:['Open','Approved','In Progress','Pending','Fulfilled','Closed','Cancelled'];
   const resolution=type==='Incident'?`<label>${t('Resolution','Rezolvare')}<textarea name="resolution"></textarea></label>`:'';
-  const back=modal(`${id} · ${record.title}`,`<div class="p2Grid"><div><h3>${t('Details','Detalii')}</h3><dl><dt>${t('Status','Stare')}</dt><dd>${esc(record.status)}</dd><dt>${t('Priority','Prioritate')}</dt><dd>${esc(record.priority||'P3')}</dd><dt>${t('Assigned to','Alocat către')}</dt><dd>${esc(record.assignee||record.assignment_group||'—')}</dd><dt>${t('Description','Descriere')}</dt><dd>${esc(record.description||'—')}</dd></dl>${sla(record)}<form class="p2Transition"><label>${t('Next status','Starea următoare')}<select name="status">${statuses.map(status=>`<option>${status}</option>`).join('')}</select></label><label>${t('Work note','Notă de lucru')}<textarea name="note"></textarea></label>${resolution}<button class="primary">${t('Update workflow','Actualizează fluxul')}</button></form></div><div><h3>${t('Activity','Activitate')}</h3>${timeline(data.history)}</div></div>`);
+  const back=modal(`${id} · ${record.title}`,`<div class="p2Grid"><div><h3>${t('Details','Detalii')}</h3><dl><dt>${t('Status','Stare')}</dt><dd>${esc(record.status)}</dd><dt>${t('Priority','Prioritate')}</dt><dd>${esc(record.priority||'P3')}</dd><dt>${t('Assigned to','Alocat către')}</dt><dd>${esc(record.assignee||record.assignment_group||'—')}</dd><dt>${t('Description','Descriere')}</dt><dd>${esc(record.description||'—')}</dd></dl>${sla(record)}<form class="p2Transition"><label>${t('Next status','Starea următoare')}<select name="status">${statuses.map(status=>`<option>${status}</option>`).join('')}</select></label><label>${t('Work note','Notă de lucru')}<textarea name="note"></textarea></label>${resolution}<button class="primary">${t('Update workflow','Actualizează fluxul')}</button></form></div><div><h3>${t('Activity','Activitate')}</h3>${timeline(data.history)}</div></div>`,true);
   back.querySelector('form').onsubmit=async event=>{
     event.preventDefault();
     const form=new FormData(event.currentTarget);
