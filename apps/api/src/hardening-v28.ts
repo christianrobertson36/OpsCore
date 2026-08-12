@@ -6,7 +6,7 @@ const MIGRATIONS=[
  ['022-sla','SLA tracking'],['023-notifications','Notification centre'],['024-phase2','Connected workflows and CMDB'],
  ['025-phase3','Operational maturity'],['026-phase4','Service operations automation'],['027-phase5','Governance and resilience'],
  ['028-hardening','Production hardening and migration tracking'],['029-phase7','Service portfolio and experience'],
- ['032-phase8','Capacity, cost management and comprehensive record audit']
+ ['032-phase8','Capacity, cost management and comprehensive record audit'],['034-phase9','Service Desk productivity and native record workspace']
 ];
 
 export async function ensureHardeningV28(pool:any){
@@ -30,7 +30,7 @@ async function readiness(pool:any){
 }
 
 export function registerHardeningV28(app:Express,pool:any,requireRoles:(...roles:any[])=>any){
- app.get('/ready',async(_req:any,res:any)=>{const state=await readiness(pool);res.status(state.ok?200:503).json({...state,app:'Core Ops Workflow API',version:'v33',webVersion:'v41'})});
+ app.get('/ready',async(_req:any,res:any)=>{const state=await readiness(pool);res.status(state.ok?200:503).json({...state,app:'Core Ops Workflow API',version:'v34',webVersion:'v42'})});
  app.get('/api/administration/diagnostics',requireRoles('Administrator'),async(_req:any,res:any,next:any)=>{try{const state=await readiness(pool);const migrations=(await pool.query('SELECT * FROM schema_migrations ORDER BY migration_key')).rows;const counts=(await pool.query(`SELECT (SELECT COUNT(*) FROM users)::int users,(SELECT COUNT(*) FROM incidents)::int incidents,(SELECT COUNT(*) FROM service_requests)::int requests,(SELECT COUNT(*) FROM assets)::int assets,(SELECT COUNT(*) FROM audit_events)::int audit_events`)).rows[0];res.json({state,migrations,counts,node:process.version,environment:process.env.NODE_ENV||'development',checkedAt:new Date().toISOString()})}catch(e){next(e)}});
  app.post('/api/administration/diagnostics/run',requireRoles('Administrator'),async(req:any,res:any,next:any)=>{try{const state=await readiness(pool),status=state.ok?'Passed':'Failed';await pool.query(`INSERT INTO platform_diagnostics(check_name,status,detail) VALUES('Production readiness',$1,$2)`,[status,JSON.stringify(state)]);res.status(state.ok?200:503).json(state)}catch(e){next(e)}});
  app.get('/api/administration/migrations',requireRoles('Administrator'),async(_req:any,res:any,next:any)=>{try{res.json((await pool.query('SELECT * FROM schema_migrations ORDER BY migration_key')).rows)}catch(e){next(e)}});
