@@ -246,8 +246,8 @@ async function initDatabase() {
 }
 
 app.get('/health', async (_req,res) => {
-  try { await pool.query('SELECT 1'); res.json({ ok:true, app:'OpsCore API', version:'v6', database:'connected', auth:'enabled', infrastructure:'server-rooms-racks' }); }
-  catch { res.status(503).json({ ok:false, app:'OpsCore API', version:'v6', database:'unavailable' }); }
+  try { await pool.query('SELECT 1'); res.json({ ok:true, app:'Core Ops Workflow API', database:'connected', auth:'enabled', infrastructure:'server-rooms-racks' }); }
+  catch { res.status(503).json({ ok:false, app:'Core Ops Workflow API', database:'unavailable' }); }
 });
 
 app.post('/auth/login', async (req,res,next) => {
@@ -264,7 +264,7 @@ app.post('/auth/login', async (req,res,next) => {
 });
 
 app.get('/auth/me', authRequired, (req,res) => res.json({ user:req.authUser }));
-app.get('/api/platform', authRequired, (_req,res) => res.json({ name:'OpsCore', version:'v6', modules:[{key:'service',name:'OpsCore Service',status:'active'},{key:'infrastructure',name:'OpsCore Infrastructure',status:'server-rooms-racks-live'},{key:'compliance',name:'OpsCore Compliance',status:'site-foundation-active'}] }));
+app.get('/api/platform', authRequired, (_req,res) => res.json({ name:'Core Ops Workflow', modules:[{key:'service',name:'Core Ops Service',status:'active'},{key:'infrastructure',name:'Core Ops Infrastructure',status:'server-rooms-racks-live'},{key:'compliance',name:'Core Ops Compliance',status:'site-foundation-active'}] }));
 
 app.use('/api', authRequired);
 
@@ -404,4 +404,4 @@ app.post('/api/users', requireRoles('Administrator'), async (req,res,next)=>{ tr
 
 app.use((error:unknown,_req:express.Request,res:express.Response,_next:express.NextFunction)=>{ console.error(error); res.status(500).json({error:'internal server error'}); });
 
-initDatabase().then(()=>app.listen(port,'0.0.0.0',()=>console.log(`OpsCore API v6 listening on ${port}`))).catch(error=>{ console.error('OpsCore database initialisation failed',error); process.exit(1); });
+initDatabase().then(()=>app.listen(port,'0.0.0.0',()=>console.log(`Core Ops Workflow base API listening on ${port}`))).catch(error=>{ console.error('Core Ops database initialisation failed',error); process.exit(1); });

@@ -74,12 +74,17 @@
   min-width: 70px !important;
   max-width: 116px !important;
   padding: 4px 9px !important;
-  font-size: 9px !important;
+  font-size: 11px !important;
+  font-weight: 750 !important;
+  line-height: 1.15 !important;
+  color: #dcecff !important;
   border: 1px solid transparent;
 }
 
 #coreopsTopMenu .topMenuItems button:hover {
   border-color: rgba(120,190,235,.2);
+  color: #fff !important;
+  background: rgba(36,110,164,.22) !important;
 }
 
 @media (max-width: 1180px) {
