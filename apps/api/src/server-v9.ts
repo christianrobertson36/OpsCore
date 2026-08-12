@@ -30,7 +30,7 @@ const licensing=createLicensingV9(pool);
 const centralServerUrl=String(process.env.LICENSING_SERVER_URL||'').replace(/\/+$/,'');
 const centralClientSecret=String(process.env.LICENSING_CLIENT_SECRET||'');
 const API_VERSION='v41';
-const WEB_VERSION='v51';
+const WEB_VERSION='v52';
 const PRODUCTS=['OPSCORE','DCAM','SERVER_MANAGER'] as const;
 
 function productForPath(path:string){
