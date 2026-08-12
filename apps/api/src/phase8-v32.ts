@@ -31,17 +31,27 @@ export async function ensurePhase8V32(pool:any){
    id BIGSERIAL PRIMARY KEY,resource_type VARCHAR(40) NOT NULL,metric VARCHAR(60) NOT NULL,warning_percent NUMERIC(5,2) NOT NULL DEFAULT 80,critical_percent NUMERIC(5,2) NOT NULL DEFAULT 90,notify_role VARCHAR(50) DEFAULT 'Infrastructure',active BOOLEAN NOT NULL DEFAULT TRUE,UNIQUE(resource_type,metric));
   INSERT INTO cost_centres(code,name,owner) VALUES('OPS','Operations','Operations') ON CONFLICT(code) DO NOTHING;
   INSERT INTO capacity_thresholds(resource_type,metric,warning_percent,critical_percent) VALUES('Rack','Rack units',80,90),('Licence','Users',80,95),('Licence','Assets',80,95) ON CONFLICT(resource_type,metric) DO NOTHING;
+  CREATE OR REPLACE FUNCTION coreops_redact_jsonb(value JSONB) RETURNS JSONB AS $$
+  BEGIN
+   IF value IS NULL THEN RETURN NULL; END IF;
+   IF jsonb_typeof(value)='object' THEN
+    RETURN (SELECT COALESCE(jsonb_object_agg(key,CASE WHEN key ~* '(password|passwd|secret|token|api.?key|private.?key|credential|licen[cs]e.?key)' THEN '"[REDACTED]"'::jsonb ELSE coreops_redact_jsonb(val) END),'{}'::jsonb) FROM jsonb_each(value) item(key,val));
+   ELSIF jsonb_typeof(value)='array' THEN
+    RETURN (SELECT COALESCE(jsonb_agg(coreops_redact_jsonb(val)),'[]'::jsonb) FROM jsonb_array_elements(value) item(val));
+   END IF;
+   RETURN value;
+  END; $$ LANGUAGE plpgsql IMMUTABLE;
   CREATE OR REPLACE FUNCTION coreops_record_audit() RETURNS TRIGGER AS $$
   DECLARE old_row JSONB; new_row JSONB; safe_old JSONB; safe_new JSONB; identity TEXT; fields TEXT[];
   BEGIN
    old_row=CASE WHEN TG_OP='INSERT' THEN NULL ELSE to_jsonb(OLD) END;
    new_row=CASE WHEN TG_OP='DELETE' THEN NULL ELSE to_jsonb(NEW) END;
-   safe_old=old_row-ARRAY['password_hash','licence_key','token','secret','client_secret'];
-   safe_new=new_row-ARRAY['password_hash','licence_key','token','secret','client_secret'];
+   safe_old=coreops_redact_jsonb(old_row);
+   safe_new=coreops_redact_jsonb(new_row);
    identity=COALESCE(safe_new->>'number',safe_new->>'asset_number',safe_new->>'code',safe_new->>'reference',safe_new->>'id',safe_old->>'number',safe_old->>'asset_number',safe_old->>'code',safe_old->>'reference',safe_old->>'id','unknown');
    IF TG_OP='UPDATE' THEN SELECT COALESCE(array_agg(key ORDER BY key),'{}') INTO fields FROM (SELECT key FROM jsonb_each(safe_old) WHERE safe_old->key IS DISTINCT FROM safe_new->key) changed; ELSE fields=ARRAY[]::TEXT[]; END IF;
    INSERT INTO audit_events(record_type,record_id,action,before_data,after_data,actor,table_name,operation,changed_fields,source)
-   VALUES(initcap(replace(TG_TABLE_NAME,'_',' ')),identity,TG_OP,safe_old,safe_new,COALESCE(safe_new->>'updated_by',safe_new->>'created_by',safe_new->>'author',safe_old->>'updated_by',safe_old->>'created_by','System/API'),TG_TABLE_NAME,TG_OP,fields,'Database');
+   VALUES(initcap(replace(TG_TABLE_NAME,'_',' ')),identity,TG_OP,safe_old,safe_new,COALESCE(NULLIF(current_setting('coreops.actor',TRUE),''),safe_new->>'updated_by',safe_new->>'created_by',safe_new->>'requested_by',safe_new->>'submitted_by',safe_new->>'captured_by',safe_new->>'author',safe_old->>'updated_by',safe_old->>'created_by','System/API'),TG_TABLE_NAME,TG_OP,fields,'Database');
    RETURN COALESCE(NEW,OLD);
   END; $$ LANGUAGE plpgsql;
   CREATE OR REPLACE FUNCTION coreops_protect_audit() RETURNS TRIGGER AS $$

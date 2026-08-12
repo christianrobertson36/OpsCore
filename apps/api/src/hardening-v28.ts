@@ -5,11 +5,9 @@ const MIGRATIONS=[
  ['001-core','Core platform schema'],['018-enterprise','Enterprise workflow modules'],['021-monitoring','Monitoring foundation'],
  ['022-sla','SLA tracking'],['023-notifications','Notification centre'],['024-phase2','Connected workflows and CMDB'],
  ['025-phase3','Operational maturity'],['026-phase4','Service operations automation'],['027-phase5','Governance and resilience'],
- ['028-hardening','Production hardening and migration tracking'],['029-phase7','Service portfolio and experience'],
- ['032-phase8','Capacity, cost management and comprehensive record audit'],['034-phase9','Service Desk productivity and native record workspace'],
- ['035-phase10','Mature Change, Problem, Knowledge and access administration'],['037-phase11','CMDB lifecycle, software, stockroom and data quality'],
- ['038-phase12','Service Catalogue and workflow automation maturity']
+ ['028-hardening','Production hardening and migration tracking']
 ];
+const LATEST_MIGRATION='038-phase12';
 
 export async function ensureHardeningV28(pool:any){
  await pool.query(`CREATE TABLE IF NOT EXISTS schema_migrations(
@@ -26,8 +24,11 @@ async function readiness(pool:any){
   await pool.query('SELECT 1');
   const rows=(await pool.query(`SELECT table_name FROM information_schema.tables WHERE table_schema='public' AND table_name=ANY($1::text[])`,[REQUIRED_TABLES])).rows.map((r:any)=>r.table_name);
   const missing=REQUIRED_TABLES.filter(t=>!rows.includes(t));
-  const migrationCount=Number((await pool.query('SELECT COUNT(*) count FROM schema_migrations')).rows[0].count);
-  return {ok:missing.length===0,database:'connected',latencyMs:Date.now()-started,migrations:migrationCount,missingTables:missing};
+  const migrationRows=(await pool.query('SELECT migration_key FROM schema_migrations')).rows;
+  const applied=migrationRows.map((row:any)=>row.migration_key);
+  const migrationCount=applied.length;
+  const latestMigrationApplied=applied.includes(LATEST_MIGRATION);
+  return {ok:missing.length===0&&latestMigrationApplied,database:'connected',latencyMs:Date.now()-started,migrations:migrationCount,latestMigration:LATEST_MIGRATION,latestMigrationApplied,missingTables:missing};
  }catch(error:any){return {ok:false,database:'unavailable',latencyMs:Date.now()-started,migrations:0,missingTables:[],error:String(error?.message||error)}}
 }
 
