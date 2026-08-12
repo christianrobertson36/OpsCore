@@ -32,7 +32,7 @@ function sideButton(key){
   if(key==='Service Portfolio')return {click:()=>window.CoreOpsPhase7?.open?.(),classList:{contains:()=>document.querySelector('.app main')?.classList.contains('phase7Active')}};
   if(key==='Governance')return {click:()=>window.CoreOpsPhase5?.open?.(),classList:{contains:()=>document.querySelector('.app main')?.classList.contains('phase5Active')}};
   if(key==='Operations Hub')return {click:()=>window.CoreOpsPhase4?.hub?.(),classList:{contains:()=>document.querySelector('.app main')?.classList.contains('phase4Active')}};
-  if(key==='Service Catalogue')return {click:()=>window.CoreOpsPhase4?.catalogue?.(),classList:{contains:()=>false}};
+  if(key==='Service Catalogue')return {click:()=>window.CoreOpsPhase12?.catalogue?.()||window.CoreOpsPhase4?.catalogue?.(),classList:{contains:()=>document.querySelector('.app main')?.classList.contains('phase12Active')}};
   if(key==='My Work')return {click:()=>window.CoreOpsPhase3?.openMyWork?.(),classList:{contains:()=>document.querySelector('.app main')?.classList.contains('phase3Active')}};
   if(key==='DCAM Overview')return document.querySelector('[data-dcam-overview]');
   if(key==='Monitoring')return document.querySelector('[data-monitoring]');
