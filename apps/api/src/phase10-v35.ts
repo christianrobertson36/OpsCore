@@ -28,7 +28,7 @@ export async function ensurePhase10V35(pool:any){await pool.query(`
  CREATE INDEX IF NOT EXISTS idx_change_tasks_change ON change_tasks(change_id,sequence_no);
  CREATE INDEX IF NOT EXISTS idx_cab_change ON change_cab_decisions(change_id,decided_at DESC);
  CREATE INDEX IF NOT EXISTS idx_knowledge_versions_article ON knowledge_versions(article_id,version DESC);
- DO $$ DECLARE table_name TEXT; BEGIN FOREACH table_name IN ARRAY ARRAY['change_tasks','change_cab_decisions','knowledge_versions'] LOOP EXECUTE format('DROP TRIGGER IF EXISTS coreops_audit_trigger ON %I',table_name);EXECUTE format('CREATE TRIGGER coreops_audit_trigger AFTER INSERT OR UPDATE OR DELETE ON %I FOR EACH ROW WHEN (OLD IS DISTINCT FROM NEW) EXECUTE FUNCTION coreops_record_audit()',table_name);END LOOP;END $$;
+ DO $$ DECLARE table_name TEXT; BEGIN FOREACH table_name IN ARRAY ARRAY['change_tasks','change_cab_decisions','knowledge_versions'] LOOP EXECUTE format('DROP TRIGGER IF EXISTS coreops_audit_trigger ON %I',table_name);EXECUTE format('CREATE TRIGGER coreops_audit_trigger AFTER INSERT OR UPDATE OR DELETE ON %I FOR EACH ROW EXECUTE FUNCTION coreops_record_audit()',table_name);END LOOP;END $$;
  INSERT INTO schema_migrations(migration_key,description) VALUES('035-phase10','Mature Change, Problem, Knowledge and access administration') ON CONFLICT(migration_key) DO NOTHING;
 `)}
 

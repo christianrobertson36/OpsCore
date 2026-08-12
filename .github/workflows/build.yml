@@ -64,8 +64,10 @@ jobs:
           trap 'kill $api_pid 2>/dev/null || true' EXIT
           for attempt in $(seq 1 60); do
             if curl --fail --silent http://127.0.0.1:5058/ready > /tmp/ready.json; then break; fi
+            if ! kill -0 $api_pid 2>/dev/null; then cat /tmp/opscore-api.log; exit 1; fi
             sleep 1
           done
+          test -s /tmp/ready.json || { cat /tmp/opscore-api.log; exit 1; }
           cat /tmp/ready.json
           node -e "const fs=require('fs');const r=JSON.parse(fs.readFileSync('/tmp/ready.json'));if(!r.ok||r.latestMigration!=='038-phase12'||!r.latestMigrationApplied)process.exit(1)"
 

@@ -46,6 +46,7 @@ export async function ensurePhase8V32(pool:any){
   BEGIN
    old_row=CASE WHEN TG_OP='INSERT' THEN NULL ELSE to_jsonb(OLD) END;
    new_row=CASE WHEN TG_OP='DELETE' THEN NULL ELSE to_jsonb(NEW) END;
+   IF TG_OP='UPDATE' AND old_row IS NOT DISTINCT FROM new_row THEN RETURN NEW; END IF;
    safe_old=coreops_redact_jsonb(old_row);
    safe_new=coreops_redact_jsonb(new_row);
    identity=COALESCE(safe_new->>'number',safe_new->>'asset_number',safe_new->>'code',safe_new->>'reference',safe_new->>'id',safe_old->>'number',safe_old->>'asset_number',safe_old->>'code',safe_old->>'reference',safe_old->>'id','unknown');
@@ -62,7 +63,7 @@ export async function ensurePhase8V32(pool:any){
  for(const table of AUDITED_TABLES){
   const exists=(await pool.query(`SELECT to_regclass($1) name`,[`public.${table}`])).rows[0]?.name;
   if(!exists)continue;
-  await pool.query(`DROP TRIGGER IF EXISTS coreops_audit_trigger ON ${table}; CREATE TRIGGER coreops_audit_trigger AFTER INSERT OR UPDATE OR DELETE ON ${table} FOR EACH ROW WHEN (OLD IS DISTINCT FROM NEW) EXECUTE FUNCTION coreops_record_audit()`);
+  await pool.query(`DROP TRIGGER IF EXISTS coreops_audit_trigger ON ${table}; CREATE TRIGGER coreops_audit_trigger AFTER INSERT OR UPDATE OR DELETE ON ${table} FOR EACH ROW EXECUTE FUNCTION coreops_record_audit()`);
  }
  await pool.query(`INSERT INTO schema_migrations(migration_key,description) VALUES('032-phase8','Capacity, cost management and comprehensive record audit') ON CONFLICT(migration_key) DO NOTHING`);
 }
