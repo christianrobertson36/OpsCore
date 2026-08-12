@@ -1,0 +1,83 @@
+/* Stable login composition: keep presentation copy clear and the form at the right edge. */
+html:has(.authScreen form.authCard) .authScreen {
+  grid-template-columns: minmax(520px, 1fr) minmax(430px, 540px) !important;
+  column-gap: clamp(28px, 4vw, 72px) !important;
+  padding: 0 clamp(30px, 4vw, 72px) 0 0 !important;
+}
+
+html:has(.authScreen form.authCard) #coreopsLoginPresentation {
+  width: calc(100% - 610px) !important;
+  max-width: 900px;
+  padding: 5vh clamp(44px, 6vw, 96px) !important;
+  align-items: center !important;
+  overflow: hidden;
+}
+
+#coreopsLoginPresentation .v14HeroInner {
+  width: min(720px, 100%);
+}
+
+#coreopsLoginPresentation .v14HeroInner h1 {
+  max-width: 690px;
+  font-size: clamp(38px, 3.8vw, 64px) !important;
+  line-height: 1.04 !important;
+  overflow-wrap: normal;
+}
+
+#coreopsLoginPresentation .v14FlowGrid {
+  max-width: 590px;
+}
+
+html:has(.authScreen form.authCard) .authCard {
+  grid-column: 2 !important;
+  justify-self: end !important;
+  width: min(510px, 100%) !important;
+  margin: 0 !important;
+}
+
+html:has(.authScreen form.authCard) .authCard .logoMark.big {
+  display: block !important;
+  width: min(270px, 75%) !important;
+  height: 70px !important;
+  margin: 0 0 20px !important;
+  background: url('./core-ops-logo.svg') left center / contain no-repeat !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  color: transparent !important;
+  font-size: 0 !important;
+}
+
+@media (max-width: 1180px) {
+  html:has(.authScreen form.authCard) .authScreen {
+    grid-template-columns: minmax(410px, 1fr) minmax(400px, 500px) !important;
+    column-gap: 24px !important;
+    padding-right: 28px !important;
+  }
+
+  html:has(.authScreen form.authCard) #coreopsLoginPresentation {
+    width: calc(100% - 525px) !important;
+    padding-inline: 40px 24px !important;
+  }
+
+  #coreopsLoginPresentation .v14FlowGrid {
+    grid-template-columns: 1fr;
+    max-width: 400px;
+  }
+
+  #coreopsLoginPresentation .v14Flow:nth-child(n + 3) {
+    display: none;
+  }
+}
+
+@media (max-width: 900px) {
+  html:has(.authScreen form.authCard) .authScreen {
+    grid-template-columns: 1fr !important;
+    padding: 22px !important;
+  }
+
+  html:has(.authScreen form.authCard) .authCard {
+    grid-column: 1 !important;
+    justify-self: center !important;
+  }
+}
