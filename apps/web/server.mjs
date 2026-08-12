@@ -10,8 +10,8 @@ const apiUrl = new URL(process.env.API_URL || 'http://opscore-api:5058');
 const proxyClient = apiUrl.protocol === 'https:' ? https : http;
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const dist = path.join(__dirname, 'dist');
-const WEB_VERSION = 'v50';
-const API_VERSION = 'v40';
+const WEB_VERSION = 'v51';
+const API_VERSION = 'v41';
 
 function proxyToApi(req, res) {
   const targetPath = req.originalUrl;
