@@ -1,0 +1,126 @@
+/* Stable brand and navigation styling, intentionally independent of legacy version classes. */
+.app aside .logoRow {
+  display: flex !important;
+  min-height: 76px;
+  padding: 8px 10px 18px !important;
+  gap: 12px;
+  align-items: center;
+  background: none !important;
+}
+
+.app aside .logoRow > * {
+  visibility: visible !important;
+  pointer-events: auto !important;
+}
+
+.app aside .logoRow .logoMark {
+  flex: 0 0 46px;
+  width: 46px !important;
+  height: 46px !important;
+  overflow: hidden;
+  border-radius: 11px !important;
+  background-color: #071b31 !important;
+  background-image: url('./core-ops-logo.svg') !important;
+  background-repeat: no-repeat !important;
+  background-position: left center !important;
+  background-size: 172px auto !important;
+  box-shadow: 0 8px 26px rgba(0, 202, 220, .14) !important;
+  color: transparent !important;
+  font-size: 0 !important;
+}
+
+.app aside .logoRow .brand {
+  font-size: 0 !important;
+  line-height: 1.1;
+}
+
+.app aside .logoRow .brand::after {
+  content: 'Core Ops';
+  display: block;
+  color: #fff;
+  font-size: 18px;
+  font-weight: 850;
+  letter-spacing: -.35px;
+}
+
+.app aside .logoRow .sub {
+  font-size: 0 !important;
+}
+
+.app aside .logoRow .sub::after {
+  content: 'Workflow platform';
+  color: #8ea1b7;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+}
+
+#coreopsTopMenu .topMenuBrand {
+  gap: 6px;
+  padding: 0 18px !important;
+  border-right: 1px solid rgba(255,255,255,.08);
+}
+
+#coreopsTopMenu .topMenuItems {
+  justify-content: flex-start !important;
+  gap: 8px !important;
+  padding: 6px 16px !important;
+}
+
+#coreopsTopMenu .topMenuItems button {
+  flex: 0 1 auto !important;
+  width: auto !important;
+  min-width: 108px !important;
+  max-width: 156px !important;
+  padding: 4px 14px !important;
+  font-size: 12px !important;
+  font-weight: 750 !important;
+  line-height: 1.15 !important;
+  color: #dcecff !important;
+  border: 1px solid transparent;
+}
+
+#coreopsTopMenu .topMenuItems button:hover {
+  border-color: rgba(120,190,235,.2);
+  color: #fff !important;
+  background: rgba(36,110,164,.22) !important;
+}
+
+@media (max-width: 1180px) {
+  #coreopsTopMenu .topMenuItems button { min-width: 86px !important; padding-inline: 8px !important; font-size: 10px !important; }
+  #coreopsTopMenu .topMenuBrand { width: 178px !important; flex-basis: 178px !important; }
+}
+
+/* Stable collapsible navigation behaviour, independent of legacy root classes. */
+.app aside nav button.compactHidden {
+  display: none !important;
+}
+
+.app aside nav h4 {
+  position: relative;
+  cursor: pointer;
+  padding: 10px 30px 10px 11px;
+  margin: 8px 2px 2px;
+  border-radius: 9px;
+  user-select: none;
+}
+
+.app aside nav h4::after {
+  content: '›';
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 18px;
+  transition: transform .16s ease;
+}
+
+.app aside nav h4.menuOpen {
+  color: #fff;
+  background: rgba(255,255,255,.055);
+}
+
+.app aside nav h4.menuOpen::after {
+  transform: translateY(-50%) rotate(90deg);
+}

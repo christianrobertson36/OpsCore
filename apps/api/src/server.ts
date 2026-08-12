@@ -246,8 +246,8 @@ async function initDatabase() {
 }
 
 app.get('/health', async (_req,res) => {
-  try { await pool.query('SELECT 1'); res.json({ ok:true, app:'OpsCore API', version:'v6', database:'connected', auth:'enabled', infrastructure:'server-rooms-racks' }); }
-  catch { res.status(503).json({ ok:false, app:'OpsCore API', version:'v6', database:'unavailable' }); }
+  try { await pool.query('SELECT 1'); res.json({ ok:true, app:'Core Ops Workflow API', database:'connected', auth:'enabled', infrastructure:'server-rooms-racks' }); }
+  catch { res.status(503).json({ ok:false, app:'Core Ops Workflow API', database:'unavailable' }); }
 });
 
 app.post('/auth/login', async (req,res,next) => {
@@ -264,7 +264,7 @@ app.post('/auth/login', async (req,res,next) => {
 });
 
 app.get('/auth/me', authRequired, (req,res) => res.json({ user:req.authUser }));
-app.get('/api/platform', authRequired, (_req,res) => res.json({ name:'OpsCore', version:'v6', modules:[{key:'service',name:'OpsCore Service',status:'active'},{key:'infrastructure',name:'OpsCore Infrastructure',status:'server-rooms-racks-live'},{key:'compliance',name:'OpsCore Compliance',status:'site-foundation-active'}] }));
+app.get('/api/platform', authRequired, (_req,res) => res.json({ name:'Core Ops Workflow', modules:[{key:'service',name:'Core Ops Service',status:'active'},{key:'infrastructure',name:'Core Ops Infrastructure',status:'server-rooms-racks-live'},{key:'compliance',name:'Core Ops Compliance',status:'site-foundation-active'}] }));
 
 app.use('/api', authRequired);
 
@@ -384,7 +384,7 @@ app.patch('/api/racks/:id', requireRoles('Administrator','Infrastructure'), asyn
 app.get('/api/incidents', async (_req,res,next)=>{ try { const r=await pool.query(`SELECT number AS id,title,description,priority,status,assignment_group AS "assignmentGroup",caller,asset,opened_at AS "openedAt",updated_at AS "updatedAt" FROM incidents ORDER BY id DESC`); res.json(r.rows);} catch(error){next(error);} });
 app.post('/api/incidents', requireRoles('Administrator','Service Desk','Engineer','Infrastructure'), async (req,res,next)=>{ try { const {title,description='',priority='P3',assignmentGroup='Service Desk',caller='Portal User',asset='Unassigned'}=req.body||{}; if(!title||!String(title).trim())return res.status(400).json({error:'title is required'}); const seq=Number((await pool.query('SELECT COALESCE(MAX(id),0)+1 AS next FROM incidents')).rows[0].next); const number=`INC${String(seq).padStart(6,'0')}`; const r=await pool.query(`INSERT INTO incidents (number,title,description,priority,status,assignment_group,caller,asset) VALUES ($1,$2,$3,$4,'Open',$5,$6,$7) RETURNING number AS id,title,description,priority,status,assignment_group AS "assignmentGroup",caller,asset`,[number,String(title).trim(),description,priority,assignmentGroup,caller,asset]); res.status(201).json(r.rows[0]); } catch(error){next(error);} });
 app.patch('/api/incidents/:number', requireRoles('Administrator','Service Desk','Engineer','Infrastructure'), async (req,res,next)=>{ try { const allowed=['title','description','priority','status','assignment_group','caller','asset']; const map:Record<string,string>={assignmentGroup:'assignment_group'}; const entries=Object.entries(req.body||{}).map(([k,v])=>[map[k]||k,v]).filter(([k])=>allowed.includes(String(k))); if(!entries.length)return res.status(400).json({error:'no valid fields supplied'}); const values=entries.map(([,v])=>v); const sets=entries.map(([k],i)=>`${k}=$${i+1}`); values.push(req.params.number); const r=await pool.query(`UPDATE incidents SET ${sets.join(',')},updated_at=NOW() WHERE number=$${values.length} RETURNING number AS id,title,priority,status,assignment_group AS "assignmentGroup",caller,asset`,values); if(!r.rows[0])return res.status(404).json({error:'incident not found'}); res.json(r.rows[0]); } catch(error){next(error);} });
-app.get('/api/requests', async (_req,res,next)=>{ try { const r=await pool.query('SELECT number AS id,title,status,requested_for AS "requestedFor",created_at AS "createdAt" FROM service_requests ORDER BY id DESC'); res.json(r.rows);} catch(error){next(error);} });
+app.get('/api/requests', async (_req,res,next)=>{ try { const r=await pool.query(`SELECT number AS id,title,description,status,priority,requested_for AS "requestedFor",assignment_group AS "assignmentGroup",assignee,due_at AS "dueAt",created_at AS "createdAt",updated_at AS "updatedAt" FROM service_requests ORDER BY created_at DESC,number DESC`); res.json(r.rows);} catch(error){next(error);} });
 
 app.get('/api/assets', async (_req,res,next)=>{ try {
   const r=await pool.query(`SELECT a.id AS "dbId",a.asset_number AS id,a.name,a.type,COALESCE(s.name,a.site) AS site,a.site_id AS "siteId",l.id AS "locationId",l.name AS location,a.owner,a.state,a.serial_number AS "serialNumber",a.model
@@ -404,4 +404,4 @@ app.post('/api/users', requireRoles('Administrator'), async (req,res,next)=>{ tr
 
 app.use((error:unknown,_req:express.Request,res:express.Response,_next:express.NextFunction)=>{ console.error(error); res.status(500).json({error:'internal server error'}); });
 
-initDatabase().then(()=>app.listen(port,'0.0.0.0',()=>console.log(`OpsCore API v6 listening on ${port}`))).catch(error=>{ console.error('OpsCore database initialisation failed',error); process.exit(1); });
+initDatabase().then(()=>app.listen(port,'0.0.0.0',()=>console.log(`Core Ops Workflow base API listening on ${port}`))).catch(error=>{ console.error('Core Ops database initialisation failed',error); process.exit(1); });

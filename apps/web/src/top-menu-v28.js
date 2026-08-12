@@ -1,4 +1,9 @@
 const labels={
+  'Service Portfolio':['Services','Servicii'],
+  'Governance':['Governance','Guvernanță'],
+  'Operations Hub':['Operations','Operațiuni'],
+  'Service Catalogue':['Catalogue','Catalog'],
+  'My Work':['My Work','Activitatea mea'],
   'Dashboard':['Dashboard','Panou de control'],
   'Incidents':['Incidents','Incidente'],
   'Requests':['Requests','Solicitări'],
@@ -20,9 +25,15 @@ const labels={
   'Administration':['Admin','Administrare'],
   'Licensing':['Licensing','Licențiere']
 };
-const keys=Object.keys(labels);
+// Keep the top bar deliberately small. The complete module set remains in the left navigation.
+const keys=['Operations Hub','My Work','Incidents','Requests','Assets / CMDB','Monitoring'];
 const isRo=()=>((window.CoreOpsI18n?.getLanguage?.()||localStorage.getItem('coreops_language'))==='ro-RO');
 function sideButton(key){
+  if(key==='Service Portfolio')return {click:()=>window.CoreOpsPhase7?.open?.(),classList:{contains:()=>document.querySelector('.app main')?.classList.contains('phase7Active')}};
+  if(key==='Governance')return {click:()=>window.CoreOpsPhase5?.open?.(),classList:{contains:()=>document.querySelector('.app main')?.classList.contains('phase5Active')}};
+  if(key==='Operations Hub')return {click:()=>window.CoreOpsPhase4?.hub?.(),classList:{contains:()=>document.querySelector('.app main')?.classList.contains('phase4Active')}};
+  if(key==='Service Catalogue')return {click:()=>window.CoreOpsPhase12?.catalogue?.()||window.CoreOpsPhase4?.catalogue?.(),classList:{contains:()=>document.querySelector('.app main')?.classList.contains('phase12Active')}};
+  if(key==='My Work')return {click:()=>window.CoreOpsPhase3?.openMyWork?.(),classList:{contains:()=>document.querySelector('.app main')?.classList.contains('phase3Active')}};
   if(key==='DCAM Overview')return document.querySelector('[data-dcam-overview]');
   if(key==='Monitoring')return document.querySelector('[data-monitoring]');
   if(key==='Notifications')return document.querySelector('[data-notifications]');

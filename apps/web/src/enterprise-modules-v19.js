@@ -78,12 +78,13 @@ function renderModule(){
   <section class="enterpriseHero"><div><div class="eyebrow">CORE OPS WORKFLOW / ${esc(current)}</div><h2>${esc(txt(...cfg.title))}</h2><p>${esc(txt(...cfg.subtitle))}</p></div><button class="primary" id="enterpriseNew">+ ${esc(txt('New','Nou'))}</button></section>
   <div class="enterpriseToolbar"><input id="enterpriseSearch" value="${esc(search)}" placeholder="${esc(txt('Search records…','Caută înregistrări…'))}"><button class="secondary" id="enterpriseRefresh">${esc(txt('Refresh','Reîmprospătează'))}</button></div>
   <section class="enterpriseTable"><div class="enterpriseHead" style="grid-template-columns:${template}">${cols.map(c=>`<span>${esc(txt(c[1],c[2]))}</span>`).join('')}<span></span></div>
-  ${filtered.length?filtered.map(r=>`<div class="enterpriseRow" style="grid-template-columns:${template}">${cols.map((c,i)=>`<${i===1?'strong':'span'} class="${i===0?'mono':''}">${c[0]==='status'?`<i class="enterpriseStatus ${esc(r.status||'')}">${esc(cell(r,c[0]))}</i>`:esc(cell(r,c[0]))}</${i===1?'strong':'span'}>`).join('')}<span class="enterpriseActions"><button class="miniBtn" data-enterprise-edit="${r.id}">${esc(txt('Edit','Editează'))}</button></span></div>`).join(''):`<div class="enterpriseEmpty">${esc(txt('No records yet.','Nu există încă înregistrări.'))}</div>`}</section>
+  ${filtered.length?filtered.map(r=>`<div class="enterpriseRow" data-enterprise-open="${esc(current)}" data-enterprise-id="${r.id}" style="grid-template-columns:${template}">${cols.map((c,i)=>`<${i===1?'strong':'span'} class="${i===0?'mono':''}">${c[0]==='status'?`<i class="enterpriseStatus ${esc(r.status||'')}">${esc(cell(r,c[0]))}</i>`:esc(cell(r,c[0]))}</${i===1?'strong':'span'}>`).join('')}<span class="enterpriseActions"><button class="miniBtn" data-enterprise-edit="${r.id}">${esc(txt('Edit','Editează'))}</button></span></div>`).join(''):`<div class="enterpriseEmpty">${esc(txt('No records yet.','Nu există încă înregistrări.'))}</div>`}</section>
  </div>`;
  w.querySelector('#enterpriseNew').onclick=()=>openForm();
  w.querySelector('#enterpriseRefresh').onclick=()=>openModule(current);
  const input=w.querySelector('#enterpriseSearch');input.oninput=e=>{search=e.target.value;renderModule();requestAnimationFrame(()=>{const n=document.querySelector('#enterpriseSearch');n?.focus();n?.setSelectionRange(search.length,search.length)})};
  w.querySelectorAll('[data-enterprise-edit]').forEach(b=>b.onclick=()=>openForm(rows.find(r=>String(r.id)===String(b.dataset.enterpriseEdit))));
+ w.querySelectorAll('[data-enterprise-open]').forEach(row=>row.onclick=e=>{if(e.target.closest('[data-enterprise-edit]'))return;if(['Problems','Changes','Knowledge'].includes(row.dataset.enterpriseOpen))window.CoreOpsPhase10?.open?.(row.dataset.enterpriseOpen,row.dataset.enterpriseId)});
 }
 
 function originalValue(row,key){

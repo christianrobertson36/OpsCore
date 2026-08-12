@@ -1,0 +1,7 @@
+.app main.phase3Active > :not(#coreopsPhase3Workspace) {
+  display: none !important;
+}
+
+.app main.phase3Active #coreopsPhase3Workspace {
+  display: block;
+}
