@@ -16,24 +16,27 @@ function applyGroups(nav){
 function setupCompactMenu(nav){
   if(!nav||nav.dataset.compactMenu==='27')return;
   nav.dataset.compactMenu='27';
-  const headings=[...nav.querySelectorAll('h4')];
-  headings.forEach((heading,index)=>{
+  const prepare=()=>{
+   const headings=[...nav.querySelectorAll('h4')];
+   headings.forEach((heading,index)=>{
     heading.setAttribute('role','button');
     heading.tabIndex=0;
     const raw=(heading.textContent||'').trim();
     heading.dataset.menuGroup=raw.toLowerCase().replace(/\s+/g,'-');
-    const toggle=()=>{
-      const open=heading.classList.contains('menuOpen');
-      headings.forEach(h=>h.classList.remove('menuOpen'));
-      if(!open)heading.classList.add('menuOpen');
-      applyGroups(nav);
-    };
-    heading.addEventListener('click',toggle);
-    heading.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();toggle()}});
-    if(index===0)heading.classList.add('menuOpen');
-  });
-  applyGroups(nav);
-  const observer=new MutationObserver(()=>applyGroups(nav));
+    if(index===0&&!headings.some(h=>h.classList.contains('menuOpen')))heading.classList.add('menuOpen');
+   });
+   applyGroups(nav);
+  };
+  const toggle=heading=>{
+    const open=heading.classList.contains('menuOpen');
+    nav.querySelectorAll('h4').forEach(h=>h.classList.remove('menuOpen'));
+    if(!open)heading.classList.add('menuOpen');
+    applyGroups(nav);
+  };
+  nav.addEventListener('click',event=>{const heading=event.target.closest('h4');if(heading&&nav.contains(heading))toggle(heading)});
+  nav.addEventListener('keydown',event=>{const heading=event.target.closest('h4');if(heading&&(event.key==='Enter'||event.key===' ')){event.preventDefault();toggle(heading)}});
+  prepare();
+  const observer=new MutationObserver(prepare);
   observer.observe(nav,{childList:true});
 }
 
@@ -42,4 +45,4 @@ if(!bootNavigation()){
   const root=document.getElementById('root');
   if(root){const observer=new MutationObserver(()=>{if(bootNavigation())observer.disconnect()});observer.observe(root,{childList:true,subtree:true})}
 }
-window.addEventListener('coreops:language-changed',()=>{const nav=document.querySelector('.app aside nav');if(!nav)return;nav.dataset.compactMenu='';setupCompactMenu(nav)});
+window.addEventListener('coreops:language-changed',()=>{const nav=document.querySelector('.app aside nav');if(nav)applyGroups(nav)});

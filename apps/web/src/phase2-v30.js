@@ -57,7 +57,7 @@ async function reporting(){
 }
 function showError(error){modal(t('Unable to open record','Înregistrarea nu poate fi deschisă'),`<p>${esc(error.message)}</p>`)}
 document.addEventListener('click',event=>{
-  const row=event.target.closest('.trow');
+  const row=event.target.closest('.trow, .row.request');
   if(row){
     const id=row.querySelector('.mono')?.textContent?.trim();
     if(/^INC/.test(id)){event.preventDefault();openWorkflow('Incident',id).catch(showError)}
