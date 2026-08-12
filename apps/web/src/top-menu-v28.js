@@ -25,7 +25,8 @@ const labels={
   'Administration':['Admin','Administrare'],
   'Licensing':['Licensing','Licențiere']
 };
-const keys=['Operations Hub','My Work','Service Portfolio','Dashboard','Incidents','Requests','Service Catalogue','Assets / CMDB','Monitoring','Governance','Reporting','Administration'];
+// Keep the top bar deliberately small. The complete module set remains in the left navigation.
+const keys=['Operations Hub','My Work','Incidents','Requests','Assets / CMDB','Monitoring'];
 const isRo=()=>((window.CoreOpsI18n?.getLanguage?.()||localStorage.getItem('coreops_language'))==='ro-RO');
 function sideButton(key){
   if(key==='Service Portfolio')return {click:()=>window.CoreOpsPhase7?.open?.(),classList:{contains:()=>document.querySelector('.app main')?.classList.contains('phase7Active')}};

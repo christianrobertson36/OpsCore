@@ -64,17 +64,17 @@
 
 #coreopsTopMenu .topMenuItems {
   justify-content: flex-start !important;
-  gap: 5px !important;
-  padding: 6px 12px !important;
+  gap: 8px !important;
+  padding: 6px 16px !important;
 }
 
 #coreopsTopMenu .topMenuItems button {
   flex: 0 1 auto !important;
   width: auto !important;
-  min-width: 70px !important;
-  max-width: 116px !important;
-  padding: 4px 9px !important;
-  font-size: 11px !important;
+  min-width: 108px !important;
+  max-width: 156px !important;
+  padding: 4px 14px !important;
+  font-size: 12px !important;
   font-weight: 750 !important;
   line-height: 1.15 !important;
   color: #dcecff !important;
@@ -88,7 +88,7 @@
 }
 
 @media (max-width: 1180px) {
-  #coreopsTopMenu .topMenuItems button { min-width: 58px !important; padding-inline: 6px !important; }
+  #coreopsTopMenu .topMenuItems button { min-width: 86px !important; padding-inline: 8px !important; font-size: 10px !important; }
   #coreopsTopMenu .topMenuBrand { width: 178px !important; flex-basis: 178px !important; }
 }
 
