@@ -1,6 +1,6 @@
 {
   "name": "opscore-web",
-  "version": "46.0.0",
+  "version": "47.0.0",
   "private": true,
   "type": "module",
   "scripts": {"build":"vite build","start":"node server.mjs","check":"node --check server.mjs && node --check src/operational-suite-v35.js && vite build"},
