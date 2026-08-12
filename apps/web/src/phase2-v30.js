@@ -43,6 +43,7 @@ async function openWorkflow(type,id){
   };
 }
 async function openAsset(id){
+  if(window.CoreOpsPhase11?.open)return window.CoreOpsPhase11.open(id);
   const data=await api(`/api/assets/${encodeURIComponent(id)}/detail`),asset=data.asset;
   const relationships=data.relationships.length?data.relationships.map(item=>`<article class="p2Relation"><b>${esc(item.parent_number)} → ${esc(item.child_number)}</b><span>${esc(item.relationship_type)}</span></article>`).join(''):`<p>${t('No asset relationships.','Nu există relații între active.')}</p>`;
   modal(`${asset.id} · ${asset.name}`,`<div class="p2Grid"><div><h3>${t('Configuration item','Element de configurație')}</h3><dl><dt>${t('Type','Tip')}</dt><dd>${esc(asset.type)}</dd><dt>${t('State','Stare')}</dt><dd>${esc(asset.state)}</dd><dt>${t('Site','Locație')}</dt><dd>${esc(asset.site_name||'—')}</dd><dt>${t('Room / location','Cameră / amplasare')}</dt><dd>${esc(asset.location_name||'—')}</dd><dt>${t('Rack','Rack')}</dt><dd>${esc(asset.rack_name||'—')}</dd><dt>${t('Equipment','Echipament')}</dt><dd>${esc(asset.equipment_name||'—')}</dd></dl></div><div><h3>${t('Relationships','Relații')}</h3>${relationships}</div></div>`);
