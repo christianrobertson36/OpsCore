@@ -11,7 +11,7 @@
 .topNavIcon{width:22px;height:22px;flex:0 0 22px;border-radius:6px;background:rgba(255,255,255,.07);display:grid;place-items:center;font-size:12px;font-weight:900;color:#6fd9ff}.topActive .topNavIcon{background:rgba(255,255,255,.15);color:#fff}.topNavLabel{overflow:hidden;text-overflow:ellipsis}
 .topMenuUtility{height:58px;flex:0 0 auto;display:flex;align-items:center;gap:7px;padding:6px 12px 6px 8px;border-left:1px solid rgba(255,255,255,.1);color:#dce7f3}.topMenuUtility button,.topMenuUtility select{border:1px solid #30445e;background:#142338;color:#edf6ff;border-radius:9px;height:36px;font-size:10px;font-weight:750;box-shadow:inset 0 1px rgba(255,255,255,.035);transition:background .16s ease,border-color .16s ease,transform .16s ease}.topMenuUtility button{padding:0 10px;cursor:pointer}.topMenuUtility button:hover,.topMenuUtility select:hover{background:#1d314b;border-color:#45617f}.topMenuUtility button:active{transform:translateY(1px)}.topMenuUtility button:focus-visible,.topMenuUtility select:focus-visible{outline:2px solid #4cc9ff;outline-offset:2px}.topLanguage{display:flex;align-items:center;gap:6px;font-size:8px;color:#91a4ba}.topLanguage select{min-width:82px;padding:0 26px 0 9px}.topRole{font-size:9px;font-weight:800;white-space:nowrap;color:#8ce0b9;padding:0 2px}.topUser{min-width:40px}.topRefresh{font-size:16px!important;width:36px;padding:0!important}
 html.coreopsTopMenuActive .app{padding-top:58px!important}
-html.coreopsTopMenuActive .app aside{top:58px!important;height:calc(100vh - 58px)!important}
+html.coreopsTopMenuActive .app>aside{top:58px!important;height:calc(100dvh - 58px)!important}
 
 @media(max-width:1500px){
   .topMenuBrand{width:220px!important;flex-basis:220px!important;padding:0 12px!important}
@@ -31,5 +31,5 @@ html.coreopsTopMenuActive .app aside{top:58px!important;height:calc(100vh - 58px
   .topMenuItems{height:64px!important}
   .topMenuItems button{height:48px!important;font-size:7px!important;padding-inline:2px!important}
   html.coreopsTopMenuActive .app{padding-top:64px!important}
-  html.coreopsTopMenuActive .app aside{top:64px!important;height:calc(100vh - 64px)!important}
+  html.coreopsTopMenuActive body .app>aside{inset:64px auto 0 0!important;height:calc(100dvh - 64px)!important;max-height:calc(100dvh - 64px)!important}
 }
