@@ -53,7 +53,7 @@ function App(){
       if(button.dataset.dcamOverview||button.dataset.monitoring||button.dataset.sla||button.dataset.notifications)button.classList.remove('active');
     });
   }
-  function navTo(item){closeExtensionWorkspaces();setPage(item);setServiceRecord(null);setServiceDetail(null);if(item!=='Sites')setSelectedSite(null);if(item!=='Server Rooms')setSelectedRoom(null);if(item!=='Racks')setSelectedRack(null)}
+  function navTo(item){closeExtensionWorkspaces();setPage(item);setServiceRecord(null);setServiceDetail(null);if(item!=='Sites')setSelectedSite(null);if(item!=='Server Rooms')setSelectedRoom(null);if(item!=='Racks')setSelectedRack(null);window.scrollTo({top:0,left:0,behavior:'auto'})}
 
   async function openServiceRecord(type,id){const kind=type==='Incident'?'incidents':'requests';try{const detail=await json(`/${kind}/${id}/detail`);setServiceRecord({type,id,kind});setServiceDetail(detail);const [collab,groups]=await Promise.allSettled([json(`/${kind}/${id}/collaboration`),json('/service-desk/groups')]);setCollaboration(collab.status==='fulfilled'?collab.value:{comments:[],watchers:[],attachments:[],templates:[]});setServiceGroups(groups.status==='fulfilled'?groups.value:[{id:0,name:detail[type.toLowerCase()]?.assignment_group||'Service Desk'}]);if(collab.status==='rejected'||groups.status==='rejected')notify('Record opened; some collaboration tools are temporarily unavailable')}catch(error){notify(`Unable to open ${type.toLowerCase()}: ${error.message}`)}}
   async function reloadServiceRecord(){if(serviceRecord)await openServiceRecord(serviceRecord.type,serviceRecord.id)}
