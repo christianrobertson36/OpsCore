@@ -2,6 +2,15 @@
 .coreopsV14.coreopsTopMenuActive .app>aside>.logoRow{display:none!important}
 .coreopsV14 .app>aside{position:fixed!important;left:0!important;top:58px!important;bottom:0!important;width:250px!important;height:auto!important;max-height:none!important;overflow:hidden!important;z-index:80!important}
 .coreopsV14 .app>aside nav{min-height:0!important;overflow-y:auto!important;overscroll-behavior:contain;scrollbar-width:thin;scrollbar-color:#34445d transparent}
+.coreopsV14 .app>aside nav{padding:18px 14px 22px!important}
+.coreopsV14 .app>aside nav h4{margin:20px 10px 8px!important;padding:0!important;color:#7487a0!important;font-size:9px!important;font-weight:850!important;letter-spacing:.15em!important;line-height:1.2!important;text-transform:uppercase!important}
+.coreopsV14 .app>aside nav h4:first-of-type{margin-top:16px!important}
+.coreopsV14 .app>aside nav button{position:relative!important;width:100%!important;min-height:42px!important;margin:3px 0!important;padding:10px 13px!important;border:1px solid transparent!important;border-radius:10px!important;background:transparent!important;color:#c8d3e2!important;font-size:13px!important;font-weight:650!important;line-height:1.25!important;text-align:left!important;display:flex!important;align-items:center!important;gap:9px!important;cursor:pointer!important;transition:background .16s ease,border-color .16s ease,color .16s ease,transform .16s ease!important}
+.coreopsV14 .app>aside nav button:hover{background:#182439!important;border-color:#243652!important;color:#fff!important;transform:translateX(2px)}
+.coreopsV14 .app>aside nav button.active{background:linear-gradient(135deg,#2168cf,#2f74ed)!important;border-color:#4181ee!important;color:#fff!important;font-weight:780!important;box-shadow:0 8px 20px rgba(20,91,204,.24)!important}
+.coreopsV14 .app>aside nav button.active:before{content:'';position:absolute;left:-14px;top:10px;bottom:10px;width:3px;border-radius:0 4px 4px 0;background:#64ddff;box-shadow:0 0 10px rgba(100,221,255,.55)}
+.coreopsV14 .app>aside nav button span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.coreopsV14 .app>aside .asideFooter{margin:0 14px 14px!important;padding:14px 10px!important;border-top:1px solid #263348!important;background:linear-gradient(180deg,rgba(17,29,47,0),rgba(17,29,47,.75))!important}
 .coreopsV14 .app>aside .logoRow,.coreopsV14 .app>aside .asideFooter{flex:0 0 auto}
 .coreopsV14 .app>main{grid-column:2!important}.coreopsV14 .app>main>header{position:sticky!important;top:58px!important;z-index:90!important;margin:-28px -32px 24px!important;padding:18px 32px 15px!important;background:rgba(244,247,251,.98)!important;border-bottom:1px solid #dfe6ef!important;backdrop-filter:blur(14px);box-shadow:0 7px 18px rgba(18,35,55,.05)}
 .coreopsV14 .app>main>header .headActions{flex-wrap:wrap;justify-content:flex-end}
