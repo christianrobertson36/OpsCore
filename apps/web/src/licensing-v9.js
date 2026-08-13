@@ -1,7 +1,7 @@
 import './licensing-v9.css';
 
 const PRODUCT_GROUPS={OPSCORE:['Incidents','Requests','Problems','Changes','Knowledge'],SERVER_MANAGER:['Server Rooms','Racks','Equipment'],DCAM:['Audits','Inspections','Evidence']};
-const WEB_VERSION='v64',API_VERSION='v44';
+const WEB_VERSION='v65',API_VERSION='v44';
 let licence=null,lastToken='',installed=false,activeTab='overview',auditRows=[],installation=null,activation=null;
 
 function token(){return localStorage.getItem('opscore_token')||''}
