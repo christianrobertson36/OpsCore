@@ -52,7 +52,7 @@ function ensure(){
     bar=document.createElement('div');bar.id='coreopsTopMenu';
     bar.innerHTML='<div class="topMenuBrand"><i class="topBrandIcon" aria-hidden="true"></i><div><b>Core Ops</b><span>Workflow</span></div></div><div class="topMenuItems"></div><div class="topMenuUtility"></div>';
     const row=bar.querySelector('.topMenuItems');
-    keys.forEach(key=>{const b=document.createElement('button');b.type='button';b.dataset.topKey=key;b.innerHTML=`<span class="topNavIcon" aria-hidden="true">${icons[key]||'•'}</span><span class="topNavLabel"></span>`;b.onclick=()=>sideButton(key)?.click();row.appendChild(b)});
+    keys.forEach(key=>{const b=document.createElement('button');b.type='button';b.dataset.topKey=key;b.innerHTML=`<span class="topNavIcon" aria-hidden="true">${icons[key]||'•'}</span><span class="topNavLabel"></span>`;b.onclick=()=>{sideButton(key)?.click();window.scrollTo({top:0,left:0,behavior:'auto'})};row.appendChild(b)});
     document.body.appendChild(bar);
   }
   document.documentElement.classList.add('coreopsTopMenuActive');
