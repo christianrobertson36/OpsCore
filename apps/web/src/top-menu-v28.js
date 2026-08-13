@@ -25,8 +25,9 @@ const labels={
   'Administration':['Admin','Administrare'],
   'Licensing':['Licensing','Licențiere']
 };
-// Keep the top bar deliberately small. The complete module set remains in the left navigation.
-const keys=[];
+// Primary shortcuts live here; the sidebar remains the complete module navigator.
+const keys=['Dashboard','My Work','Incidents','Requests','Assets / CMDB','Monitoring'];
+const icons={'Dashboard':'⌂','My Work':'✓','Incidents':'!','Requests':'↗','Assets / CMDB':'◇','Monitoring':'◉'};
 const isRo=()=>((window.CoreOpsI18n?.getLanguage?.()||localStorage.getItem('coreops_language'))==='ro-RO');
 function sideButton(key){
   if(key==='Service Portfolio')return {click:()=>window.CoreOpsPhase7?.open?.(),classList:{contains:()=>document.querySelector('.app main')?.classList.contains('phase7Active')}};
@@ -51,11 +52,11 @@ function ensure(){
     bar=document.createElement('div');bar.id='coreopsTopMenu';
     bar.innerHTML='<div class="topMenuBrand"><i class="topBrandIcon" aria-hidden="true"></i><div><b>Core Ops</b><span>Workflow</span></div></div><div class="topMenuItems"></div><div class="topMenuUtility"></div>';
     const row=bar.querySelector('.topMenuItems');
-    keys.forEach(key=>{const b=document.createElement('button');b.type='button';b.dataset.topKey=key;b.onclick=()=>sideButton(key)?.click();row.appendChild(b)});
+    keys.forEach(key=>{const b=document.createElement('button');b.type='button';b.dataset.topKey=key;b.innerHTML=`<span class="topNavIcon" aria-hidden="true">${icons[key]||'•'}</span><span class="topNavLabel"></span>`;b.onclick=()=>sideButton(key)?.click();row.appendChild(b)});
     document.body.appendChild(bar);
   }
   document.documentElement.classList.add('coreopsTopMenuActive');
-  bar.querySelectorAll('[data-top-key]').forEach(b=>{const key=b.dataset.topKey;b.textContent=labels[key][isRo()?1:0];b.classList.toggle('topActive',Boolean(sideButton(key)?.classList.contains('active')))});
+  bar.querySelectorAll('[data-top-key]').forEach(b=>{const key=b.dataset.topKey;const label=b.querySelector('.topNavLabel');if(label)label.textContent=labels[key][isRo()?1:0];b.title=labels[key][isRo()?1:0];b.classList.toggle('topActive',Boolean(sideButton(key)?.classList.contains('active')))});
   const utility=bar.querySelector('.topMenuUtility'),actions=document.querySelector('.app main>header .headActions');
   if(utility&&actions){
     const licence=actions.querySelector('#licenceTrialBanner'),user=actions.querySelector('.uxUserButton'),role=actions.querySelector('.badge'),refresh=actions.querySelector('.iconBtn'),version=actions.querySelector('.pill');
