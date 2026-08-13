@@ -1,0 +1,11 @@
+.coreopsV14 .logoRow .logoMark{width:48px!important;height:48px!important;flex:0 0 48px!important;background-size:contain!important;background-position:center!important;overflow:hidden!important}
+.coreopsV14 .app>aside{position:sticky!important;top:58px!important;height:calc(100vh - 58px)!important;max-height:calc(100vh - 58px)!important;overflow:hidden!important;align-self:start!important}
+.coreopsV14 .app>aside nav{min-height:0!important;overflow-y:auto!important;overscroll-behavior:contain;scrollbar-width:thin;scrollbar-color:#34445d transparent}
+.coreopsV14 .app>aside .logoRow,.coreopsV14 .app>aside .asideFooter{flex:0 0 auto}
+.coreopsV14 .app>main>header{position:sticky!important;top:58px!important;z-index:90!important;margin:-28px -32px 24px!important;padding:18px 32px 15px!important;background:rgba(244,247,251,.96)!important;border-bottom:1px solid #dfe6ef!important;backdrop-filter:blur(14px);box-shadow:0 7px 18px rgba(18,35,55,.05)}
+.coreopsV14 .app>main>header .headActions{flex-wrap:wrap;justify-content:flex-end}
+.coreopsV14 .app>main>header .licenceBanner{width:auto!important;min-width:0!important;margin:0!important;padding:7px 10px!important;border-radius:10px!important;display:flex!important;gap:7px!important;white-space:nowrap!important}
+.coreopsV14 .app>main>header .licenceBanner strong{font-size:10px!important}.coreopsV14 .app>main>header .licenceBanner span{font-size:9px!important}.coreopsV14 .app>main>header .licenceBanner b{display:none!important}
+@media(max-width:1180px){.coreopsV14 .app>aside{width:225px!important}.coreopsV14 .app>main>header .licenceBanner span{display:none!important}}
+@media(max-width:900px){.coreopsV14 .app>main>header{top:64px!important}}
+@media(max-width:760px){.coreopsV14 .app>main>header{position:sticky!important;margin:-20px -20px 20px!important;padding:14px 20px!important}.coreopsV14 .app>main>header p{display:none}.coreopsV14 .app>main>header h1{font-size:22px}.coreopsV14 .app>main>header .licenceBanner{display:none!important}}
