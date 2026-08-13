@@ -26,7 +26,7 @@ const labels={
   'Licensing':['Licensing','Licențiere']
 };
 // Keep the top bar deliberately small. The complete module set remains in the left navigation.
-const keys=['Operations Hub','My Work','Incidents','Requests','Assets / CMDB','Monitoring'];
+const keys=[];
 const isRo=()=>((window.CoreOpsI18n?.getLanguage?.()||localStorage.getItem('coreops_language'))==='ro-RO');
 function sideButton(key){
   if(key==='Service Portfolio')return {click:()=>window.CoreOpsPhase7?.open?.(),classList:{contains:()=>document.querySelector('.app main')?.classList.contains('phase7Active')}};
@@ -49,7 +49,7 @@ function ensure(){
   let bar=document.getElementById('coreopsTopMenu');
   if(!bar){
     bar=document.createElement('div');bar.id='coreopsTopMenu';
-    bar.innerHTML='<div class="topMenuBrand"><b>CoreOps</b><span>Workflow</span></div><div class="topMenuItems"></div><div class="topMenuUtility"></div>';
+    bar.innerHTML='<div class="topMenuBrand"><i class="topBrandIcon" aria-hidden="true"></i><div><b>Core Ops</b><span>Workflow</span></div></div><div class="topMenuItems"></div><div class="topMenuUtility"></div>';
     const row=bar.querySelector('.topMenuItems');
     keys.forEach(key=>{const b=document.createElement('button');b.type='button';b.dataset.topKey=key;b.onclick=()=>sideButton(key)?.click();row.appendChild(b)});
     document.body.appendChild(bar);
