@@ -69,7 +69,7 @@ jobs:
           done
           test -s /tmp/ready.json || { cat /tmp/opscore-api.log; exit 1; }
           cat /tmp/ready.json
-          node -e "const fs=require('fs');const r=JSON.parse(fs.readFileSync('/tmp/ready.json'));if(!r.ok||r.latestMigration!=='042-phase16'||!r.latestMigrationApplied)process.exit(1)"
+          node -e "const fs=require('fs');const r=JSON.parse(fs.readFileSync('/tmp/ready.json'));if(!r.ok||r.latestMigration!=='043-phase17'||!r.latestMigrationApplied)process.exit(1)"
 
   web:
     runs-on: ubuntu-latest
