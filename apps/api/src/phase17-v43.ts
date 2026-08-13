@@ -32,15 +32,19 @@ function dcamRecords(remote:any){
  const rows:any[]=[];
  const add=(recordType:string,source:any,name:any,naturalKey:any=null)=>rows.push({recordType,sourceId:text(source.id,100),displayName:text(name,300)||`${recordType} ${source.id}`,naturalKey:text(naturalKey,300)||null,payload:source,sourceUpdatedAt:source.updated_at||source.updatedAt||null});
  for(const x of remote.users||[])add('User',x,x.name||x.email,x.email?.toLowerCase());
+ for(const x of remote.customers||[])add('Customer',x,x.name||x.company_name,x.email?.toLowerCase()||x.customer_reference||null);
+ for(const x of remote.contacts||[])add('Contact',x,x.name||`${x.first_name||''} ${x.last_name||''}`.trim()||x.email,x.email?.toLowerCase()||null);
  for(const x of remote.buildings||[])add('Site',x,x.name,x.postcode?.replace(/\s/g,'').toUpperCase()||null);
  for(const x of remote.assets||[])add('Asset',x,x.asset_name||x.name,x.serial_number||x.asset_tag||null);
  for(const x of remote.workOrders||[])add('Work',x,`${x.work_order_reference||''} ${x.title||''}`.trim(),x.work_order_reference||null);
  return rows.filter(x=>x.sourceId);
 }
 
-async function syncDcam(pool:any,dcamRequest:DcamRequest,who:string){
+export async function syncDcam(pool:any,dcamRequest:DcamRequest,who:string,trigger='Manual'){
  const started=new Date();
+ let runId:any=null;
  try{
+  runId=(await pool.query(`INSERT INTO shared_sync_runs(source_app,trigger_type,status) VALUES('DCAM',$1,'Running') RETURNING id`,[trigger])).rows[0]?.id;
   const remote=await dcamRequest('/api/integration/coreops/collaboration'),records=dcamRecords(remote);
   let created=0,updated=0,unchanged=0;
   await pool.query('BEGIN');
@@ -59,9 +63,9 @@ async function syncDcam(pool:any,dcamRequest:DcamRequest,who:string){
    await pool.query(`UPDATE shared_records SET sync_state='Not seen' WHERE source_app='DCAM' AND last_seen_at < $1`,[started]);
    await pool.query(`UPDATE shared_apps SET status='Connected',last_sync_at=NOW(),last_error=NULL,record_count=$1,updated_at=NOW() WHERE app_code='DCAM'`,[records.length]);
    await pool.query(`INSERT INTO shared_activity(event_type,source_app,detail,actor) VALUES('SYNC_COMPLETED','DCAM',$1,$2)`,[`${records.length} records checked; ${created} created; ${updated} updated`,who]);
-   await pool.query('COMMIT');return {ok:true,source:'DCAM',checked:records.length,created,updated,unchanged};
+   await pool.query('COMMIT');if(runId)await pool.query(`UPDATE shared_sync_runs SET status='Completed',records_checked=$1,records_created=$2,records_updated=$3,finished_at=NOW() WHERE id=$4`,[records.length,created,updated,runId]);return {ok:true,source:'DCAM',trigger,checked:records.length,created,updated,unchanged};
   }catch(error){await pool.query('ROLLBACK');throw error}
- }catch(error:any){const detail=text(error?.message||error,1000);await pool.query(`UPDATE shared_apps SET status='Error',last_error=$1,updated_at=NOW() WHERE app_code='DCAM'`,[detail]);throw error}
+ }catch(error:any){const detail=text(error?.message||error,1000);await pool.query(`UPDATE shared_apps SET status='Error',last_error=$1,updated_at=NOW() WHERE app_code='DCAM'`,[detail]);if(runId)await pool.query(`UPDATE shared_sync_runs SET status='Failed',error_detail=$1,finished_at=NOW() WHERE id=$2`,[detail,runId]);await pool.query(`INSERT INTO shared_activity(event_type,source_app,detail,actor) VALUES('SYNC_FAILED','DCAM',$1,$2)`,[detail,who]);throw error}
 }
 
 export function registerPhase17V43(app:Express,pool:any,requireRoles:any,dcamRequest:DcamRequest){
@@ -81,6 +85,6 @@ export function registerPhase17V43(app:Express,pool:any,requireRoles:any,dcamReq
   if(search){values.push(`%${search}%`);where+=` AND (display_name ILIKE $${values.length} OR natural_key ILIKE $${values.length})`}
   const rows=(await pool.query(`SELECT global_id,record_type,source_app,source_id,display_name,natural_key,sync_state,source_updated_at,last_seen_at,payload FROM shared_records ${where} ORDER BY record_type,display_name LIMIT 500`,values)).rows;res.json({ok:true,records:rows});
  }catch(error){next(error)}});
- app.post('/api/shared-data/sync/dcam',manage,async(req:any,res:any,next:any)=>{try{res.json(await syncDcam(pool,dcamRequest,actor(req)))}catch(error){next(error)}});
+ app.post('/api/shared-data/sync/dcam',manage,async(req:any,res:any,next:any)=>{try{res.json(await syncDcam(pool,dcamRequest,actor(req),'Manual'))}catch(error){next(error)}});
  app.patch('/api/shared-data/conflicts/:id',requireRoles('Administrator'),async(req:any,res:any,next:any)=>{try{const id=Number(req.params.id),status=['Resolved','Ignored'].includes(req.body?.status)?req.body.status:null;if(!Number.isInteger(id)||!status)return res.status(400).json({error:'valid conflict resolution required'});await pool.query(`UPDATE shared_conflicts SET status=$1,resolved_at=NOW() WHERE id=$2`,[status,id]);res.json({ok:true})}catch(error){next(error)}});
 }
