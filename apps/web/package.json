@@ -1,9 +1,20 @@
 {
   "name": "opscore-web",
-  "version": "52.0.0",
+  "version": "53.0.0",
   "private": true,
   "type": "module",
-  "scripts": {"build":"vite build","start":"node server.mjs","check":"node --check server.mjs && node --check src/operational-suite-v35.js && vite build"},
-  "dependencies": {"express":"^5.1.0","react":"^19.0.0","react-dom":"^19.0.0"},
-  "devDependencies": {"@vitejs/plugin-react":"^4.3.4","vite":"^6.2.0"}
+  "scripts": {
+    "build": "vite build",
+    "start": "node server.mjs",
+    "check": "node --check server.mjs && node --check src/operational-suite-v35.js && vite build"
+  },
+  "dependencies": {
+    "express": "^5.1.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^4.3.4",
+    "vite": "^6.2.0"
+  }
 }
