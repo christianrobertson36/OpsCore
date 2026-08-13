@@ -1,7 +1,7 @@
 .coreopsV14 .logoRow .logoMark{width:48px!important;height:48px!important;flex:0 0 48px!important;background-image:url('./core-ops-icon.svg')!important;background-size:contain!important;background-position:center!important;background-repeat:no-repeat!important;overflow:hidden!important}
 .coreopsV14.coreopsTopMenuActive .app>aside>.logoRow{display:none!important}
-.coreopsV14 .app>aside{position:fixed!important;left:0!important;top:58px!important;bottom:0!important;width:250px!important;height:auto!important;max-height:none!important;overflow:hidden!important;z-index:80!important}
-.coreopsV14 .app>aside nav{min-height:0!important;overflow-y:auto!important;overscroll-behavior:contain;scrollbar-width:thin;scrollbar-color:#34445d transparent}
+html.coreopsTopMenuActive body .app>aside{position:fixed!important;inset:58px auto 0 0!important;width:250px!important;height:calc(100dvh - 58px)!important;max-height:calc(100dvh - 58px)!important;margin:0!important;transform:none!important;overflow:hidden!important;z-index:80!important;display:flex!important;flex-direction:column!important;contain:layout paint!important}
+.coreopsV14 .app>aside nav{flex:1 1 auto!important;min-height:0!important;overflow-x:hidden!important;overflow-y:auto!important;overscroll-behavior:contain!important;scrollbar-width:thin;scrollbar-color:#34445d transparent}
 .coreopsV14 .app>aside nav{padding:18px 14px 22px!important}
 .coreopsV14 .app>aside nav h4{margin:20px 10px 8px!important;padding:0!important;color:#7487a0!important;font-size:9px!important;font-weight:850!important;letter-spacing:.15em!important;line-height:1.2!important;text-transform:uppercase!important}
 .coreopsV14 .app>aside nav h4:first-of-type{margin-top:16px!important}
@@ -17,7 +17,7 @@
 html.coreopsTopMenuActive .coreopsV14 .app>main>header .headActions,html.coreopsTopMenuActive .app>main>header .headActions{display:none!important}
 .coreopsV14 .app>main>header .licenceBanner{width:auto!important;min-width:0!important;margin:0!important;padding:7px 10px!important;border-radius:10px!important;display:flex!important;gap:7px!important;white-space:nowrap!important}
 .coreopsV14 .app>main>header .licenceBanner strong{font-size:10px!important}.coreopsV14 .app>main>header .licenceBanner span{font-size:9px!important}.coreopsV14 .app>main>header .licenceBanner b{display:none!important}
-@media(max-width:1180px){.coreopsV14 .app>aside{width:225px!important}.coreopsV14 .app>main>header .licenceBanner span{display:none!important}}
+@media(max-width:1180px){html.coreopsTopMenuActive body .app>aside{width:225px!important}.coreopsV14 .app>main>header .licenceBanner span{display:none!important}}
 @media(max-width:900px){.coreopsV14 .app>main>header{top:64px!important}}
-@media(max-width:900px){.coreopsV14 .app>aside{display:none!important}.coreopsV14 .app>main{grid-column:1!important}}
+@media(max-width:900px){html.coreopsTopMenuActive body .app>aside{display:none!important}.coreopsV14 .app>main{grid-column:1!important}}
 @media(max-width:760px){.coreopsV14 .app>main>header{position:sticky!important;margin:-20px -20px 20px!important;padding:14px 20px!important}.coreopsV14 .app>main>header p{display:none}.coreopsV14 .app>main>header h1{font-size:22px}.coreopsV14 .app>main>header .licenceBanner{display:none!important}}
