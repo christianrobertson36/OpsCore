@@ -1,4 +1,4 @@
-const VERSION_FALLBACK={api:'v43',web:'v55'};
+const VERSION_FALLBACK={api:'v43',web:'v56'};
 
 async function loadRuntimeVersions(){
   let versions=VERSION_FALLBACK;
