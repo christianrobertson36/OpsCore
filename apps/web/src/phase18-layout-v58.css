@@ -14,7 +14,7 @@
 .coreopsV14 .app>aside .logoRow,.coreopsV14 .app>aside .asideFooter{flex:0 0 auto}
 .coreopsV14 .app>main{grid-column:2!important}.coreopsV14 .app>main>header{position:sticky!important;top:58px!important;z-index:90!important;margin:-28px -32px 24px!important;padding:18px 32px 15px!important;background:rgba(244,247,251,.98)!important;border-bottom:1px solid #dfe6ef!important;backdrop-filter:blur(14px);box-shadow:0 7px 18px rgba(18,35,55,.05)}
 .coreopsV14 .app>main>header .headActions{flex-wrap:wrap;justify-content:flex-end}
-.coreopsV14.coreopsTopMenuActive .app>main>header .headActions{display:none!important}
+html.coreopsTopMenuActive .coreopsV14 .app>main>header .headActions,html.coreopsTopMenuActive .app>main>header .headActions{display:none!important}
 .coreopsV14 .app>main>header .licenceBanner{width:auto!important;min-width:0!important;margin:0!important;padding:7px 10px!important;border-radius:10px!important;display:flex!important;gap:7px!important;white-space:nowrap!important}
 .coreopsV14 .app>main>header .licenceBanner strong{font-size:10px!important}.coreopsV14 .app>main>header .licenceBanner span{font-size:9px!important}.coreopsV14 .app>main>header .licenceBanner b{display:none!important}
 @media(max-width:1180px){.coreopsV14 .app>aside{width:225px!important}.coreopsV14 .app>main>header .licenceBanner span{display:none!important}}

@@ -59,10 +59,20 @@ function ensure(){
   bar.querySelectorAll('[data-top-key]').forEach(b=>{const key=b.dataset.topKey;const label=b.querySelector('.topNavLabel');if(label)label.textContent=labels[key][isRo()?1:0];b.title=labels[key][isRo()?1:0];b.classList.toggle('topActive',Boolean(sideButton(key)?.classList.contains('active')))});
   const utility=bar.querySelector('.topMenuUtility'),actions=document.querySelector('.app main>header .headActions');
   if(utility&&actions){
-    const licence=actions.querySelector('#licenceTrialBanner'),user=actions.querySelector('.uxUserButton'),role=actions.querySelector('.badge'),refresh=actions.querySelector('.iconBtn'),version=actions.querySelector('.pill');
-    utility.innerHTML=`${licence?`<button class="topLicence" data-top-licence>${licence.querySelector('strong')?.textContent||'Licence'}</button>`:''}<label class="topLanguage"><span>${isRo()?'Limbă':'Language'}</span><select><option value="en-GB">English</option><option value="ro-RO">Română</option></select></label>${user?`<button class="topUser" data-top-user>${user.textContent.trim()}</button>`:''}${role?`<span class="topRole">${role.textContent.trim()}</span>`:''}${refresh?'<button class="topRefresh" data-top-refresh aria-label="Refresh">↻</button>':''}${version?`<span class="topVersion">${version.textContent.trim()}</span>`:''}`;
-    const select=utility.querySelector('select');if(select){select.value=window.CoreOpsI18n?.getLanguage?.()||localStorage.getItem('coreops_language')||'en-GB';select.onchange=()=>window.CoreOpsI18n?.setLanguage?.(select.value)}
-    utility.querySelector('[data-top-licence]')?.addEventListener('click',()=>licence?.click());utility.querySelector('[data-top-user]')?.addEventListener('click',()=>user?.click());utility.querySelector('[data-top-refresh]')?.addEventListener('click',()=>refresh?.click());
+    const user=actions.querySelector('.uxUserButton'),role=actions.querySelector('.badge'),refresh=actions.querySelector('.iconBtn');
+    if(!utility.dataset.ready){
+      utility.innerHTML='<label class="topLanguage"><span>Language</span><select aria-label="Language"><option value="en-GB">English</option><option value="ro-RO">Română</option></select></label><button class="topUser" data-top-user aria-label="User menu"></button><span class="topRole"></span><button class="topRefresh" data-top-refresh aria-label="Refresh">↻</button>';
+      utility.dataset.ready='true';
+      const select=utility.querySelector('select');select.onchange=()=>window.CoreOpsI18n?.setLanguage?.(select.value);
+      utility.querySelector('[data-top-user]').onclick=()=>document.querySelector('.app main>header .uxUserButton')?.click();
+      utility.querySelector('[data-top-refresh]').onclick=()=>document.querySelector('.app main>header .iconBtn')?.click();
+    }
+    const select=utility.querySelector('select'),languageLabel=utility.querySelector('.topLanguage span');
+    if(select&&document.activeElement!==select)select.value=window.CoreOpsI18n?.getLanguage?.()||localStorage.getItem('coreops_language')||'en-GB';
+    if(languageLabel)languageLabel.textContent=isRo()?'Limbă':'Language';
+    utility.querySelector('.topUser').textContent=user?.textContent.trim()||'PA';
+    utility.querySelector('.topRole').textContent=role?.textContent.trim()||'';
+    utility.querySelector('.topRefresh').hidden=!refresh;
   }
 }
 const timer=setInterval(ensure,800);

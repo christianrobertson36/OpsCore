@@ -9,7 +9,7 @@
 .topMenuItems button:hover{background:#14263c!important;border-color:#29415d!important;color:#fff!important;transform:translateY(-1px)}
 .topMenuItems button.topActive{background:#1e5f9d!important;border-color:#2879c1!important;color:#fff!important;box-shadow:0 5px 14px rgba(0,93,176,.24)}
 .topNavIcon{width:22px;height:22px;flex:0 0 22px;border-radius:6px;background:rgba(255,255,255,.07);display:grid;place-items:center;font-size:12px;font-weight:900;color:#6fd9ff}.topActive .topNavIcon{background:rgba(255,255,255,.15);color:#fff}.topNavLabel{overflow:hidden;text-overflow:ellipsis}
-.topMenuUtility{height:58px;flex:0 0 auto;display:flex;align-items:center;gap:6px;padding:5px 10px 5px 5px;border-left:1px solid rgba(255,255,255,.1);color:#dce7f3}.topMenuUtility button,.topMenuUtility select{border:1px solid rgba(255,255,255,.14);background:#17263a;color:#edf6ff;border-radius:8px;height:34px;font-size:10px;font-weight:750}.topMenuUtility button{padding:0 9px;cursor:pointer}.topMenuUtility button:hover{background:#213650}.topLanguage{display:flex;align-items:center;gap:5px;font-size:8px;color:#91a4ba}.topLanguage select{padding:0 5px}.topRole,.topVersion{font-size:9px;font-weight:800;white-space:nowrap}.topRole{color:#8ce0b9}.topVersion{padding:5px 7px;border-radius:999px;background:#20354e;color:#a8c8ed}.topUser{min-width:38px}.topRefresh{font-size:16px!important;width:34px;padding:0!important}.topLicence{color:#9fc5ff!important}
+.topMenuUtility{height:58px;flex:0 0 auto;display:flex;align-items:center;gap:7px;padding:6px 12px 6px 8px;border-left:1px solid rgba(255,255,255,.1);color:#dce7f3}.topMenuUtility button,.topMenuUtility select{border:1px solid #30445e;background:#142338;color:#edf6ff;border-radius:9px;height:36px;font-size:10px;font-weight:750;box-shadow:inset 0 1px rgba(255,255,255,.035);transition:background .16s ease,border-color .16s ease,transform .16s ease}.topMenuUtility button{padding:0 10px;cursor:pointer}.topMenuUtility button:hover,.topMenuUtility select:hover{background:#1d314b;border-color:#45617f}.topMenuUtility button:active{transform:translateY(1px)}.topMenuUtility button:focus-visible,.topMenuUtility select:focus-visible{outline:2px solid #4cc9ff;outline-offset:2px}.topLanguage{display:flex;align-items:center;gap:6px;font-size:8px;color:#91a4ba}.topLanguage select{min-width:82px;padding:0 26px 0 9px}.topRole{font-size:9px;font-weight:800;white-space:nowrap;color:#8ce0b9;padding:0 2px}.topUser{min-width:40px}.topRefresh{font-size:16px!important;width:36px;padding:0!important}
 html.coreopsTopMenuActive .app{padding-top:58px!important}
 html.coreopsTopMenuActive .app aside{top:58px!important;height:calc(100vh - 58px)!important}
 
@@ -23,7 +23,7 @@ html.coreopsTopMenuActive .app aside{top:58px!important;height:calc(100vh - 58px
   .topMenuBrand span{display:none!important}
   .topMenuItems{gap:1px!important;padding-left:4px!important;padding-right:4px!important}
   .topMenuItems button{min-width:44px!important;font-size:7.5px!important;letter-spacing:-.01em!important}.topNavIcon{display:none}
-  .topLicence,.topLanguage{display:none!important}
+  .topLanguage{display:none!important}
 }
 @media(max-width:900px){
   #coreopsTopMenu{height:64px!important}
