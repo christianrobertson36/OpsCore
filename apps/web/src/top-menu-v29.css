@@ -5,18 +5,21 @@
 .topMenuBrand{height:58px!important;width:250px!important;flex:0 0 250px!important;display:flex!important;align-items:center!important;box-sizing:border-box!important}
 .topMenuItems{display:flex!important;flex:1 1 auto!important;min-width:0!important;height:58px!important;overflow:hidden!important;padding:5px 8px!important;gap:2px!important;box-sizing:border-box!important;white-space:normal!important}
 .topMenuItems button{flex:1 1 0!important;min-width:0!important;max-width:none!important;height:48px!important;padding:3px 4px!important;font-size:9px!important;line-height:1.12!important;white-space:normal!important;text-align:center!important;overflow:hidden!important;text-overflow:clip!important;display:flex!important;align-items:center!important;justify-content:center!important}
+.topMenuUtility{height:58px;flex:0 0 auto;display:flex;align-items:center;gap:6px;padding:5px 10px 5px 5px;border-left:1px solid rgba(255,255,255,.1);color:#dce7f3}.topMenuUtility button,.topMenuUtility select{border:1px solid rgba(255,255,255,.14);background:#17263a;color:#edf6ff;border-radius:8px;height:34px;font-size:10px;font-weight:750}.topMenuUtility button{padding:0 9px;cursor:pointer}.topMenuUtility button:hover{background:#213650}.topLanguage{display:flex;align-items:center;gap:5px;font-size:8px;color:#91a4ba}.topLanguage select{padding:0 5px}.topRole,.topVersion{font-size:9px;font-weight:800;white-space:nowrap}.topRole{color:#8ce0b9}.topVersion{padding:5px 7px;border-radius:999px;background:#20354e;color:#a8c8ed}.topUser{min-width:38px}.topRefresh{font-size:16px!important;width:34px;padding:0!important}.topLicence{color:#9fc5ff!important}
 html.coreopsTopMenuActive .app{padding-top:58px!important}
 html.coreopsTopMenuActive .app aside{top:58px!important;height:calc(100vh - 58px)!important}
 
 @media(max-width:1500px){
   .topMenuBrand{width:220px!important;flex-basis:220px!important;padding:0 12px!important}
   .topMenuItems button{font-size:8px!important;padding:2px!important}
+  .topLanguage span,.topRole{display:none}.topMenuUtility{gap:4px;padding-right:6px}
 }
 @media(max-width:1180px){
   .topMenuBrand{width:190px!important;flex-basis:190px!important}
   .topMenuBrand span{display:none!important}
   .topMenuItems{gap:1px!important;padding-left:4px!important;padding-right:4px!important}
   .topMenuItems button{font-size:7.5px!important;letter-spacing:-.01em!important}
+  .topLicence,.topLanguage{display:none!important}
 }
 @media(max-width:900px){
   #coreopsTopMenu{height:64px!important}
